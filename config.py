@@ -46,7 +46,7 @@ def parse_configfile(path):
     setting = {
         'general':{
             'language':config_get('general','language', 'en-US'),
-            'tmdb_config_cache':config_get('general','tmdb_config_cache','~/.cache/autosort'),
+            'cache_path':config_get('general','cache_path','~/.cache/autosort/'),
             'tmdb_config_cache_days':config_get('general','tmdb_config_cache_days', '7'),
             'simulate_move':config_get('general','simulate_move', 'yes'),
             'simulate_download':config_get('general','simulate_download', 'yes'),
@@ -56,10 +56,11 @@ def parse_configfile(path):
             'minimal_file_size':config_get('general', 'minimal_file_size', '100')
             },
         'movie':{
-            'video_destination':config_get('movie','video_destination', '/var/lib/media/movies/%t (%y)/%t (%y)'),
-            'nfo_destination':config_get('movie','nfo_destination', '/var/lib/media/movies/%t (%y)/%t (%y).nfo'),
-            'backdrop_destination':config_get('movie','backdrop_destination', '/var/lib/media/movies/%t (%y)/fanart.jpg'),
-            'poster_destination':config_get('movie','poster_destination', '/var/lib/media/movies/%t (%y)/poster.jpg'),
+            'main_path':config_get('movie','main_path','/var/lib/media/movies/%t (%y)'),
+            'video_destination':config_get('movie','video_destination', '%m/%t (%y).%e'),
+            'nfo_destination':config_get('movie','nfo_destination', '%m/%t (%y).nfo'),
+            'backdrop_destination':config_get('movie','backdrop_destination', '%m/fanart.jpg'),
+            'poster_destination':config_get('movie','poster_destination', '%m/poster.jpg'),
             'poster_size':config_get('movie','poster_size', 'w500'),
             'backdrop_size':config_get('movie','backdrop_size', 'w1280')
             },

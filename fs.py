@@ -18,12 +18,12 @@ import os
 import shutil
 import logging
 
-def move(src, dst):
+def move(src, dst, simulate):
     logmsg="Moving \"{0}\" to \"{1}\"".format(src, dst)
 
-    if config['general']['simulate_move'] == 'yes':
+    if simulate:
         logging.info("SIMULATE: {0}".format(logmsg))
-    else
+    else:
         logging.info(logmsg)
         shutil.move(src, dst)
 
@@ -33,7 +33,7 @@ def find_video_files(path, extensions, filesize):
 
     video_files = []
     if os.path.isfile(path):
-        ext = os.path.splitext(path)[1].lower()
+        ext = os.path.splitext(path)[1].lower()[1:]
         if ext in extensions: video_files.append(path)
     else:
         for root, dirs, files in os.walk(path):

@@ -14,63 +14,71 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+import os
 import tmdbsimple
 import logging
 import datetime
-import dateutil
+import dateutil.parser
+import json
+import helpers
+
+logging.getLogger("tmdbsimple").setLevel(logging.WARNING)
 
 def set_api_key(apikey):
     tmdbsimple.API_KEY = apikey
 
 # downloads and caches the tmdb config
-def download_config():
+def download_config(cachefile):
     logging.info("Downloading TMDb config")
     tmdb_config = tmdbsimple.Configuration().info()
     tmdb_config['lastaccess'] = datetime.datetime.now().strftime('%Y-%m-%d %H:%M')
-    with open(tmdb_cache, 'w') as cachefile:
-        json.dump(tmdb_config, cachefile)
+    helpers.create_path(os.path.dirname(cachefile))
+    with open(cachefile, 'w') as cf:
+        json.dump(tmdb_config, cf)
     return tmdb_config
 
 # gets the tmdb config from cache if not too old
-def get_config():
+def get_config(cachefile, validity):
     logging.info("Getting TMDb config")
     # if cachefile doesnt exist download the data
-    if not os.path.exists(tmdb_cache):
+    if not os.path.exists(cachefile):
         logging.info("TMDB config cache doesn't exists")
-        return download_tmdb_config()
+        return download_config(cachefile)
 
     # open cache
-    with open(tmdb_cache, 'r') as cachefile:
-        tmdb_config = json.load(cachefile)
+    with open(cachefile, 'r') as cf:
+        tmdb_config = json.load(cf)
     # check if too old
     lastaccess = dateutil.parser.parse(tmdb_config['lastaccess'])
-    if (datetime.datetime.now() - lastaccess).days > config['general']['tmdb_config_cache_days']:
+    if (datetime.datetime.now() - lastaccess).days > validity:
         logging.info("Cachefile exists, but is too old")
         return download_tmdb_config()
     else:
         logging.info("Using config from cache")
         return tmdb_config
 
-# wants a search term
-# returns tmdb id
-def get_id(search_string):
-    print ("Searching TMDb for {0}".format(guess['title']))
-    tmdb_args = {'query':guess['title'], 'include_adult':'true'}
-    if 'year' in guess: tmdb_args['year']=guess['year']
+# returns tmdb id from a guess
+def get_id(name, year):
+    ns = name if year == 0 else name + "(" + str(year) + ")"
+    logging.info ("Searching TMDb for {0}".format(ns))
+    tmdb_args = {'query':name, 'include_adult':'true'}
+    if year != 0: tmdb_args['year'] = year
 
-    simple.tmdb.search.movie(**tmdb_args)
+    tmdb_search = tmdbsimple.Search()
+
+    tmdb_search.movie(**tmdb_args)
 
     if not tmdb_search.results:
-        print("Didn't found anything at TMDb.")
+        logging.info("Didn't found anything at TMDb.")
         return None
 
     if tmdb_search.total_results > 1:
-        print("We found more than one possible movie for this name. We're going to use the first one.")
+        logging.info("We found more than one possible movie for this name. We're going to use the first one.")
     else:
-        print("We have exatly one match at TMDb. Bingo Bongo")
+        logging.info("We have exatly one match at TMDb. Bingo Bongo")
 
     return tmdb_search.results[0]['id']
 
 def get_movie_info(movie_id, lang):
-    return simpletmdb.Movies(movie_id).info(language=lang, append_to_response='credits,release_dates')
+    return tmdbsimple.Movies(movie_id).info(language=lang, append_to_response='credits,release_dates')
 

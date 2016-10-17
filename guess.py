@@ -15,19 +15,20 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from guessit import guessit
+import logging
 
 def guess_vid(filename):
-    print("Guessing {0}".format(filename))
+    logging.info("Guessing {0}".format(filename))
     guess = guessit(filename)
     if guess['type'] == 'episode':
-        print("Guessed type:    episode")
-        print("Guessed title:   {0}".format(guess['title']))
-        print("Guessed season:  {0}".format(guess['season']))
-        print("Guessed episode: {0}".format(guess['episode']))
+        logging.info("Guessed type:    episode")
+        logging.info("Guessed title:   {0}".format(guess['title']))
+        logging.info("Guessed season:  {0}".format(guess['season']))
+        logging.info("Guessed episode: {0}".format(guess['episode']))
     elif guess['type'] == 'movie':
-        print("Guessed type:  movie")
-        print("Guessed title: {0}".format(guess['title']))
-        if 'year' in guess: print("Guessed year:  {0}".format(guess['year']))
+        logging.info("Guessed type:  movie")
+        logging.info("Guessed title: {0}".format(guess['title']))
+        if 'year' in guess: logging.info("Guessed year:  {0}".format(guess['year']))
     else:
-        print("Can't guess type.")
+        logging.info("Can't guess type.")
     return guess
