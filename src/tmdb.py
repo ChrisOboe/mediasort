@@ -59,8 +59,8 @@ def get_config(cachefile, validity):
 
 # returns tmdb id from a guess
 def get_id(name, year):
-    ns = name if year == 0 else name + "(" + str(year) + ")"
-    logging.info ("Searching TMDb for {0}".format(ns))
+    ns = name if year == 0 else name + " (" + str(year) + ")"
+    logging.info ("  Searching TMDb for {0}".format(ns))
     tmdb_args = {'query':name, 'include_adult':'true'}
     if year != 0: tmdb_args['year'] = year
 
@@ -69,13 +69,13 @@ def get_id(name, year):
     tmdb_search.movie(**tmdb_args)
 
     if not tmdb_search.results:
-        logging.info("Didn't found anything at TMDb.")
+        logging.info("    Didn't found anything at TMDb.")
         return None
 
     if tmdb_search.total_results > 1:
-        logging.info("We found more than one possible movie for this name. We're going to use the first one.")
+        logging.info("    We have multiple matches. Using the first one.")
     else:
-        logging.info("We have exatly one match at TMDb. Bingo Bongo")
+        logging.info("    We have exatly one match at TMDb.")
 
     return tmdb_search.results[0]['id']
 

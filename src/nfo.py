@@ -16,49 +16,81 @@
 
 import logging
 from helpers import create_path
-from dicttoxml import dicttoxml
+import collections
+#from pprint import pprint
 
 def write_movie_nfo(tmdb, nfo_destination, language, simulate):
+    #pprint(tmdb)
+
+    # get the metadata
+    general = collections.OrderedDict()
+    general['title'] = tmdb['title']
+    general['originaltitle'] = tmdb['original_title']
+    if tmdb['belongs_to_collection']:
+        general['set'] = tmdb['belongs_to_collection']
+    general['year'] = tmdb['release_date'] # maybe we only want a year
+
+    general['runtime'] = str(tmdb['runtime'])
+    general['mpaa'] = "Not available"
+    for release in tmdb['release_dates']['results']:
+        if release['iso_3166_1'] == language:
+            general['mpaa'] = str(release['release_dates'][0]['certification'])
+
+    general['tagline'] = tmdb['tagline']
+    general['plot'] = tmdb['overview']
+    general['rating'] = str(tmdb['vote_average'])
+    general['votes'] = str(tmdb['vote_count'])
+
     studios = []
-    genres = []
-    actors = []
-    mpaa = "Not available"
     for studio in tmdb['production_companies']:
         studios.append(studio['name'])
+
+    countries = []
+    for country in tmdb['production_countries']:
+        countries.append(country['name'])
+
+    directors = []
+    writers = []
+    for crew in tmdb['credits']['crew']:
+        if crew['job'] == 'Director': directors.append(crew['name'])
+        if crew['job'] == 'Writer': writers.append(crew['name'])
+
+    genres = []
     for genre in tmdb['genres']:
         genres.append(genre['name'])
+
+    actors = []
     for actor in tmdb['credits']['cast']:
         a = {}
         a['name'] = actor['name']
         a['role'] = actor['character']
         actors.append(a)
-    for release in tmdb['release_dates']['results']:
-        if release['iso_3166_1'] == language:
-            mpaa = release['release_dates']['certification']
 
-    nfo = {}
-    nfo['title'] = tmdb['title']
-    nfo['originaltitle'] = tmdb['original_title']
-    nfo['year'] = tmdb['release_date'] # maybe we only want a year
-    nfo['rating'] = tmdb['vote_average']
-    nfo['votes'] = tmdb['vote_count']
-    nfo['plot'] = tmdb['overview']
-    nfo['tagline'] = tmdb['tagline']
-    nfo['runtime'] = tmdb['runtime']
-    nfo['mpaa'] = mpaa
-    nfo['studio'] = studios
-    nfo['genre'] = genres
-    nfo['genre'] = actors
-    #nfo['id'] = tmdb['imdb_id']
-    my_item_func = lambda x: 'list_item'
-    xml = dicttoxml(nfo, custom_root='movie', attr_type=False, item_func=my_item_func)
-    logmsg = "Writing \"{0}\"".format(nfo_destination)
+    nfo = ("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n"
+           "<movie>\n")
+    for item in general:
+        nfo += "\t<{0}>{1}</{0}>\n".format(item, general[item])
+    for genre in genres:
+        nfo += "\t<genre>{0}</genre>\n".format(genre)
+    for director in directors:
+        nfo += "\t<director>{0}</director>\n".format(director)
+    for writer in writers:
+        nfo += "\t<credits>{0}</credits>\n".format(writer)
+    for studio in studios:
+        nfo += "\t<studio>{0}</studio>\n".format(studio)
+    for country in countries:
+        nfo += "\t<country>{0}</country>\n".format(country)
+    for actor in actors:
+        nfo += ("\t<actor>\n"
+                "\t\t<name>{0}</name>\n"
+                "\t\t<role>{1}</role>\n"
+                "\t</actor>\n").format(actor['name'], actor['role'])
 
-    if simulate:
-        logging.info("SIMULATE: {0}".format(logmsg))
-    else:
-        logging.info(logmsg)
+    nfo += "</movie>"
+
+    logging.info("  Writing \"{0}\"".format(nfo_destination))
+    if not simulate:
         create_path(nfo_destination)
         with open(nfo_destination, 'w') as nfofile:
-            nfofile.write(xml)
+            nfofile.write(nfo)
 

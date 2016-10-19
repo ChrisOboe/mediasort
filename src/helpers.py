@@ -24,15 +24,18 @@ def replace_by_rule(rules, string):
     return string
 
 def download(src, dst, simulate):
-    logmsg="Downloading \"{0}\" to \"{1}\"".format(src, dst)
+    logging.info("  Downloading\n    {0}\n    {1}".format(src, dst))
     if not simulate:
-        logging.info(logmsg)
         create_path(dst)
         urllib.urlretrieve(src, dst)
-    else:
-        logging.info("SIMULATE: {0}".format(logmsg))
 
 def create_path(path):
     dirname = os.path.dirname(path)
     if not os.path.exists(dirname):
         os.makedirs(dirname)
+
+def filter_fs_chars(string):
+    forbidden_chars = ['/', '\\', '<', '>', ':', '"', '|', '?', '*']
+    for char in forbidden_chars:
+        string = string.replace(char, "_")
+    return string

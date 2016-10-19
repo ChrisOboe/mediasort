@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import argparse
-import ConfigParser
+import configparser
 
 # parse arguments via argparse
 def parse_arguments():
@@ -33,44 +33,36 @@ def parse_arguments():
 
 # parses the configfile
 def parse_configfile(path):
-    config = ConfigParser.RawConfigParser()
+    config = configparser.ConfigParser()
     config.read(path)
-
-    # default config parser doesn't support defaults
-    def config_get(section, option, default):
-        if config.has_option(section, option):
-            return config.get(section, option)
-        else:
-            return default
 
     setting = {
         'general':{
-            'language':config_get('general','language', 'en-US'),
-            'cache_path':config_get('general','cache_path','~/.cache/autosort/'),
-            'tmdb_config_cache_days':config_get('general','tmdb_config_cache_days', '7'),
-            'simulate_move':config_get('general','simulate_move', 'yes'),
-            'simulate_download':config_get('general','simulate_download', 'yes'),
-            'simulate_nfo':config_get('general','simulate_nfo', 'yes'),
-            'tmdb_api_key':config_get('general','tmdb_api_key', 'bd65f46c799046c2d4286966d76c37c6'),
-            'allowed_extensions':config_get('general','allowed_extensions', 'mkv avi'),
-            'minimal_file_size':config_get('general', 'minimal_file_size', '100')
+            'language':config.get('general','language', fallback='EN-US').upper(),
+            'cache_path':config.get('general','cache_path', fallback='~/.cache/autosort/'),
+            'tmdb_config_cache_days':int(config.get('general','tmdb_config_cache_days', fallback='7')),
+            'simulate_move':config.getboolean('general','simulate_move', fallback=False),
+            'simulate_download':config.getboolean('general','simulate_download', fallback=False),
+            'simulate_nfo':config.getboolean('general','simulate_nfo', fallback=False),
+            'tmdb_api_key':config.get('general','tmdb_api_key', fallback='bd65f46c799046c2d4286966d76c37c6'),
+            'allowed_extensions':config.get('general','allowed_extensions', fallback='mkv avi').split(),
+            'minimal_file_size':int(config.get('general', 'minimal_file_size', fallback='100'))*1048576
             },
         'movie':{
-            'main_path':config_get('movie','main_path','/var/lib/media/movies/%t (%y)'),
-            'video_destination':config_get('movie','video_destination', '%m/%t (%y).%e'),
-            'nfo_destination':config_get('movie','nfo_destination', '%m/%t (%y).nfo'),
-            'backdrop_destination':config_get('movie','backdrop_destination', '%m/fanart.jpg'),
-            'poster_destination':config_get('movie','poster_destination', '%m/poster.jpg'),
-            'poster_size':config_get('movie','poster_size', 'w500'),
-            'backdrop_size':config_get('movie','backdrop_size', 'w1280')
+            'video_destination':config.get('movie','video_destination', fallback='/var/lib/media/movies/$t ($y)/$t ($y).$ext'),
+            'nfo_destination':config.get('movie','nfo_destination', fallback='/var/lib/media/movies/$t ($y)/$t ($y).nfo'),
+            'backdrop_destination':config.get('movie','backdrop_destination', fallback='/var/lib/media/movies/$t ($y)/fanart.jpg'),
+            'poster_destination':config.get('movie','poster_destination', fallback='/var/lib/media/movies/$t ($y)/poster.jpg'),
+            'poster_size':config.get('movie','poster_size', fallback='w500'),
+            'backdrop_size':config.get('movie','backdrop_size', fallback='w1280')
             },
         'episode':{
-            'video_destination':config_get('episode','video_destination', '/var/lib/media/movies/%t (%y)/%t (%y)'),
-            'nfo_destination':config_get('episode','nfo_destination', '/var/lib/media/movies/%t (%y)/%t (%y).nfo'),
-            'backdrop_destination':config_get('episode','backdrop_destination', '/var/lib/media/series/%n (%y)/fanart.jpg'),
-            'poster_destination':config_get('episode','poster_destination', '/var/lib/media/series/%n (%y)/poster.jpg'),
-            'poster_size':config_get('episode','poster_size', 'w500'),
-            'backdrop_size':config_get('episode','backdrop_size', 'w1280')
+            'video_destination':config.get('episode','video_destination', fallback='/var/lib/media/series/$t ($y)/Season $sn/E$enS$sn $et.$ext'),
+            'nfo_destination':config.get('episode','nfo_destination', fallback='/var/lib/media/series/$t ($y)/$t ($y).nfo'),
+            'backdrop_destination':config.get('episode','backdrop_destination', fallback='/var/lib/media/series/%n ($y)/fanart.jpg'),
+            'poster_destination':config.get('episode','poster_destination', fallback='/var/lib/media/series/%n ($y)/poster.jpg'),
+            'poster_size':config.get('episode','poster_size', fallback='w500'),
+            'backdrop_size':config.get('episode','backdrop_size', fallback='w1280')
             }
     }
 

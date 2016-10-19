@@ -18,17 +18,15 @@ from guessit import guessit
 import logging
 
 def guess_vid(filename):
-    logging.info("Guessing {0}".format(filename))
+    logging.info("  Guessing by filename")
     guess = guessit(filename)
     if guess['type'] == 'episode':
-        logging.info("Guessed type:    episode")
-        logging.info("Guessed title:   {0}".format(guess['title']))
-        logging.info("Guessed season:  {0}".format(guess['season']))
-        logging.info("Guessed episode: {0}".format(guess['episode']))
+        logging.info("    Guessed type:    episode")
+        logging.info("    Guessed title:   {0}".format(guess['title']))
+        logging.info("    Guessed season:  {0}".format(guess['season']))
+        logging.info("    Guessed episode: {0}".format(guess['episode']))
     elif guess['type'] == 'movie':
-        logging.info("Guessed type:  movie")
-        logging.info("Guessed title: {0}".format(guess['title']))
-        if 'year' in guess: logging.info("Guessed year:  {0}".format(guess['year']))
-    else:
-        logging.info("Can't guess type.")
+        logging.info("    Guessed type:  movie")
+        logging.info("    Guessed title: {0}".format(guess['title']))
+        if 'year' in guess: logging.info("    Guessed year:  {0}".format(guess['year']))
     return guess
