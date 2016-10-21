@@ -48,6 +48,7 @@ poster_destination = %(base_path)s/poster.jpg
 ```
 
 The following special vars can be used in the movie destinations:
+
 | Variable | Replacement |
 | -------- | -------- | 
 | $t | The title of the movie     |
@@ -57,7 +58,4 @@ The following special vars can be used in the movie destinations:
 
 
 
-| Column 1 | Column 2 | Column 3 |
-| -------- | -------- | -------- |
-| Text     | Text     | Text     |
 
