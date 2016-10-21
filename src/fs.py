@@ -21,6 +21,8 @@ from helpers import create_path
 
 def move(src, dst, simulate):
     logging.info("  Moving\n    {0}\n    {1}".format(src, dst))
+    if os.file.exists(dst):
+        raise FileExistsError("{0} already exists.".format(dst))
     if not simulate:
         create_path(dst)
         logging.info(logmsg)

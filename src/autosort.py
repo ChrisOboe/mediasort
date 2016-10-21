@@ -59,13 +59,12 @@ for videofile in videofiles:
     videofile_abspath = os.path.abspath(videofile)
     videofile_extension = os.path.splitext(videofile_basename)[1].lower()[1:]
 
-    print("Processing \"{0}\"".format(videofile_abspath))
+    print("\nProcessing \"{0}\"".format(videofile_abspath))
     guess = guess_vid(videofile_abspath)
 
     if guess['type'] == 'movie':
         tmdb_id = tmdb.get_id(guess['title'], 0 if 'year' not in guess else guess['year'])
         if not tmdb_id:
-            print()
             continue
 
         movie = tmdb.get_movie_info(tmdb_id, config['general']['language'])
@@ -78,9 +77,14 @@ for videofile in videofiles:
             }
 
         # move file
-        fs.move(videofile_abspath,
-                helpers.replace_by_rule(replacement_rules, config['movie']['video_destination']),
-                config['general']['simulate_move'])
+        try:
+            fs.move(videofile_abspath,
+                    helpers.replace_by_rule(replacement_rules, config['movie']['video_destination']),
+                    config['general']['simulate_move'])
+        except FileExistsError as err:
+            print(err)
+            print("Skipping this file")
+            continue
 
         # download fanart
         helpers.download(
