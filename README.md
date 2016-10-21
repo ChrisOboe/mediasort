@@ -54,3 +54,10 @@ The following special vars can be used in the movie destinations:
 | $ot | The original title of the movie |
 | $y | The year of the movie |
 | $ext | The file extension of the original file |
+
+
+
+| Column 1 | Column 2 | Column 3 |
+| -------- | -------- | -------- |
+| Text     | Text     | Text     |
+
