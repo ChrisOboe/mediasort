@@ -1,17 +1,14 @@
 # Autosort Readme
+Autosort is a tool which can automaticly sort movies and episodes from scene releases.
+It's written in python and uses the guessit library for guessing informations based on filename / foldername.
+It then uses this informations to scrape the metadata from TMDb by using the tmdbsimple library.
+
 ## Usage
 ```
 autosort.py [-h] -c CONFIG source
 ```
 - CONFIG has to be a valid config file for autosort
 - source can be a video file or a folder which will be recursivly searched
-
-## How the software works
-The movie title is guessed from the filename. 
-TMDb will be searched by this name. The first result will be used.
-The metadata, the backdrop and the poster image will be downloaded from TMDb.
-The file will be moved.
-All the paths are configurable
 
 ## Config file
 A example config file looks like the following:
