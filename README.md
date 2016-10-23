@@ -30,6 +30,12 @@ tmdb_api_key =   bd65f46c799046c2d4286966d76c37c6
 allowed_extensions = avi mkv
 # Only files bigger than this size in MB will be used
 minimal_file_size = 100
+# The size of the poster
+poster_size = w500
+# The size of the backdrop / fanart
+backdrop_size = w1280
+# The size of the episode thumbnail
+tumb_size = w300
 
 [movie]
 # A custom entry which can be accessed by %(entry_name)s
