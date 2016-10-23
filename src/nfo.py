@@ -17,11 +17,98 @@
 import logging
 from helpers import create_path
 import collections
-#from pprint import pprint
+
+def get_actors(tmdb):
+    actors = []
+    for actor in tmdb['credits']['cast']:
+        a = {}
+        a['name'] = actor['name']
+        a['role'] = actor['character']
+        actors.append(a)
+    return actors
+
+def get_genres(tmdb):
+    genres = []
+    for genre in tmdb['genres']:
+        genres.append(genre['name'])
+    return genres
+
+def write_nfo(nfo, destination, simulate):
+    logging.info("  Writing \"{0}\"".format(destination))
+    if not simulate:
+        create_path(destination)
+        with open(destination, 'w') as nfofile:
+            nfofile.write(nfo)
+
+def write_series_nfo(series, nfo_destination, language, simulate):
+    general = collections.OrderedDict()
+    general = collections.OrderedDict()
+    general['title'] = series['name']
+    general['rating'] = series['vote_average']
+    general['votes'] = series['vote_count']
+    general['plot'] = series['overview']
+    general['premiered'] = series['first_air_date']
+    general['runtime'] = str(series['episode_run_time'][0])
+    general['mpaa'] = "Not available"
+    for rating in series['content_ratings']['results']:
+        if rating['iso_3166_1'] == language:
+            general['mpaa'] = rating['rating']
+
+    studios = []
+    for studio in series['networks']:
+        studios.append(studio['name'])
+
+    genres = get_genres(series)
+    actors = get_actors(series)
+
+    nfo = ("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n"
+           "<tvshow>\n")
+    for item in general:
+        nfo += "\t<{0}>{1}</{0}>\n".format(item, general[item])
+    for genre in genres:
+        nfo += "\t<genre>{0}</genre>\n".format(genre)
+    for studio in studios:
+        nfo += "\t<studio>{0}</studio>\n".format(studio)
+    for actor in actors:
+        nfo += ("\t<actor>\n"
+                "\t\t<name>{0}</name>\n"
+                "\t\t<role>{1}</role>\n"
+                "\t</actor>\n").format(actor['name'], actor['role'])
+    nfo += "</tvshow>"
+
+    write_nfo(nfo, nfo_destination, simulate)
+
+def write_episode_nfo(series, episode, nfo_destination, simulate):
+    general = collections.OrderedDict()
+    general['title'] = episode['name']
+    general['showtitle'] = series['name']
+    general['rating'] = episode['vote_average']
+    general['votes'] = episode['vote_count']
+    general['season'] = episode['season_number']
+    general['episode'] = episode['episode_number']
+    general['plot'] = episode['overview']
+    general['aired'] = episode['air_date']
+
+    directors = []
+    writers = []
+    for crew in episode['crew']:
+        if crew['job'] == 'Director': directors.append(crew['name'])
+        if crew['job'] == 'Writer': writers.append(crew['name'])
+
+    nfo = ("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n"
+           "<episodedetails>\n")
+    for item in general:
+        nfo += "\t<{0}>{1}</{0}>\n".format(item, general[item])
+    for director in directors:
+        nfo += "\t<director>{0}</director>\n".format(director)
+    for writer in writers:
+        nfo += "\t<credits>{0}</credits>\n".format(writer)
+    nfo += "</episodedetails>"
+
+    write_nfo(nfo, nfo_destination, simulate)
+
 
 def write_movie_nfo(tmdb, nfo_destination, language, simulate):
-    #pprint(tmdb)
-
     # get the metadata
     general = collections.OrderedDict()
     general['title'] = tmdb['title']
@@ -55,16 +142,8 @@ def write_movie_nfo(tmdb, nfo_destination, language, simulate):
         if crew['job'] == 'Director': directors.append(crew['name'])
         if crew['job'] == 'Writer': writers.append(crew['name'])
 
-    genres = []
-    for genre in tmdb['genres']:
-        genres.append(genre['name'])
-
-    actors = []
-    for actor in tmdb['credits']['cast']:
-        a = {}
-        a['name'] = actor['name']
-        a['role'] = actor['character']
-        actors.append(a)
+    genres = get_genres(tmdb)
+    actors = get_actors(tmdb)
 
     nfo = ("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n"
            "<movie>\n")
@@ -85,12 +164,6 @@ def write_movie_nfo(tmdb, nfo_destination, language, simulate):
                 "\t\t<name>{0}</name>\n"
                 "\t\t<role>{1}</role>\n"
                 "\t</actor>\n").format(actor['name'], actor['role'])
-
     nfo += "</movie>"
 
-    logging.info("  Writing \"{0}\"".format(nfo_destination))
-    if not simulate:
-        create_path(nfo_destination)
-        with open(nfo_destination, 'w') as nfofile:
-            nfofile.write(nfo)
-
+    write_nfo(nfo, nfo_destination, simulate)

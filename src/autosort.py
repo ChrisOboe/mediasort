@@ -22,6 +22,8 @@ import os
 import logging
 import helpers
 
+from pprint import pprint
+
 import config
 args = config.parse_arguments()
 config = config.parse_configfile(args.config)
@@ -48,13 +50,17 @@ import fs
 import nfo
 
 videofiles = fs.find_video_files(
-        args.source,
-        config['general']['allowed_extensions'],
-        config['general']['minimal_file_size']
-        )
+    args.source,
+    config['general']['allowed_extensions'],
+    config['general']['minimal_file_size']
+    )
+
+# were caching tvshow entries to prevent redownloading the same again and again
+tvshows = {}
 
 # process files
 for videofile in videofiles:
+
     videofile_basename = os.path.basename(videofile)
     videofile_abspath = os.path.abspath(videofile)
     videofile_extension = os.path.splitext(videofile_basename)[1].lower()[1:]
@@ -62,11 +68,12 @@ for videofile in videofiles:
     print("\nProcessing \"{0}\"".format(videofile_abspath))
     guess = guess_vid(videofile_abspath)
 
-    if guess['type'] == 'movie':
-        tmdb_id = tmdb.get_id(guess['title'], 0 if 'year' not in guess else guess['year'])
-        if not tmdb_id:
-            continue
 
+    tmdb_id = tmdb.get_id(guess['type'], guess['title'], None if 'year' not in guess else guess['year'])
+    if not tmdb_id:
+        continue
+
+    if guess['type'] == 'movie':
         movie = tmdb.get_movie_info(tmdb_id, config['general']['language'])
 
         replacement_rules = {
@@ -88,14 +95,14 @@ for videofile in videofiles:
 
         # download fanart
         helpers.download(
-                tmdb_config['images']['secure_base_url']+config['movie']['backdrop_size']+movie['backdrop_path'],
+                tmdb_config['images']['secure_base_url']+config['general']['backdrop_size']+movie['backdrop_path'],
                 helpers.replace_by_rule(replacement_rules, config['movie']['backdrop_destination']),
                 config['general']['simulate_download']
                 )
 
         # download poster
         helpers.download(
-                tmdb_config['images']['secure_base_url']+config['movie']['poster_size']+movie['poster_path'],
+                tmdb_config['images']['secure_base_url']+config['general']['poster_size']+movie['poster_path'],
                 helpers.replace_by_rule(replacement_rules, config['movie']['poster_destination']),
                 config['general']['simulate_download']
                 )
@@ -107,7 +114,83 @@ for videofile in videofiles:
                 config['general']['language'],
                 config['general']['simulate_nfo']
                 )
-        print()
+
+    elif guess['type'] == 'episode':
+        if not tmdb_id in tvshows: tvshows[tmdb_id] = tmdb.get_tvshow_info(tmdb_id, config['general']['language'])
+        episode = tmdb.get_episode_info(tmdb_id, guess['season'], guess['episode'], config['general']['language'])
+
+        replacement_rules = {
+            '$st':helpers.filter_fs_chars(tvshows[tmdb_id]['name']),
+            '$sot':helpers.filter_fs_chars(tvshows[tmdb_id]['original_name']),
+            '$y':str(dateutil.parser.parse(tvshows[tmdb_id]['first_air_date']).year),
+            '$et':helpers.filter_fs_chars(episode['name']),
+            '$sn':str(episode['season_number']).zfill(2),
+            '$en':str(episode['episode_number']).zfill(2),
+            '$ext':videofile_extension
+            }
+
+        # move file
+        try:
+            fs.move(videofile_abspath,
+                    helpers.replace_by_rule(replacement_rules, config['episode']['video_destination']),
+                    config['general']['simulate_move'])
+        except FileExistsError as err:
+            print(err)
+            print("Skipping this file")
+            continue
+
+        # download series poster
+        helpers.download(
+            tmdb_config['images']['secure_base_url']
+                +config['general']['poster_size']
+                +tvshows[tmdb_id]['poster_path'],
+            helpers.replace_by_rule(replacement_rules, config['episode']['series_poster_destination']),
+            config['general']['simulate_download']
+            )
+
+        # download series backdrop
+        helpers.download(
+            tmdb_config['images']['secure_base_url']
+                +config['general']['backdrop_size']
+                +tvshows[tmdb_id]['backdrop_path'],
+            helpers.replace_by_rule(replacement_rules, config['episode']['series_backdrop_destination']),
+            config['general']['simulate_download']
+            )
+
+        # download season poster
+        helpers.download(
+            tmdb_config['images']['secure_base_url']
+                +config['general']['poster_size']
+                +tvshows[tmdb_id]['seasons'][episode['season_number']]['poster_path'],
+            helpers.replace_by_rule(replacement_rules, config['episode']['season_poster_destination']),
+            config['general']['simulate_download']
+            )
+
+        # download episode_thumb
+        helpers.download(
+            tmdb_config['images']['secure_base_url']
+                +config['general']['thumb_size']
+                +episode['still_path'],
+            helpers.replace_by_rule(replacement_rules, config['episode']['episode_thumb_destination']),
+            config['general']['simulate_download']
+            )
+
+        # write series nfo
+        nfo.write_series_nfo(
+                tvshows[tmdb_id],
+                helpers.replace_by_rule(replacement_rules, config['episode']['series_nfo_destination']),
+                config['general']['language'],
+                config['general']['simulate_nfo']
+                )
+
+        # write episode nfo
+        nfo.write_episode_nfo(
+                tvshows[tmdb_id],
+                episode,
+                helpers.replace_by_rule(replacement_rules, config['episode']['episode_nfo_destination']),
+                config['general']['simulate_nfo']
+                )
+
     else:
         continue
 

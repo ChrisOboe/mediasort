@@ -20,8 +20,8 @@ import logging
 from helpers import create_path
 
 def move(src, dst, simulate):
-    logging.info("  Moving\n    {0}\n    {1}".format(src, dst))
-    if os.file.exists(dst):
+    logging.info("  Moving\n    from: {0}\n    to:   {1}".format(src, dst))
+    if os.path.exists(dst):
         raise FileExistsError("{0} already exists.".format(dst))
     if not simulate:
         create_path(dst)
@@ -35,7 +35,7 @@ def find_video_files(path, extensions, filesize):
     video_files = []
     if os.path.isfile(path):
         ext = os.path.splitext(path)[1].lower()[1:]
-        if ext in extensions and os.path.getsize(path) < filesize:
+        if ext in extensions and os.path.getsize(path) >= filesize:
             video_files.append(path)
     else:
         for root, dirs, files in os.walk(path):

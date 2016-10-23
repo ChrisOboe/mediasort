@@ -24,7 +24,7 @@ def replace_by_rule(rules, string):
     return string
 
 def download(src, dst, simulate):
-    logging.info("  Downloading\n    {0}\n    {1}".format(src, dst))
+    logging.info("  Downloading\n    from: {0}\n    to:   {1}".format(src, dst))
     if not simulate:
         create_path(dst)
         urllib.urlretrieve(src, dst)
