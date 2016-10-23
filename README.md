@@ -74,8 +74,6 @@ and the following ones can be used in the episode destinations:
 | $sn | The season number |
 | $en | The episode number |
 | $ext | The file extension of the original file |
-
-## Known bugs
-- We use the absolute path for guessing the movie title since the foldernames are often better named than the files itself. This gives false results on movies in other movie folders.
+.
 
 
