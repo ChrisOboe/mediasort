@@ -80,6 +80,9 @@ and the following ones can be used in the episode destinations:
 | $sn | The season number |
 | $en | The episode number |
 | $ext | The file extension of the original file |
-.
+
+## known oddities
+- when having movies in a folder with a number it is recognized as episode. so either force movies via commandline, or use folders without numbers.
+- when having videos in subfolders, the subfolder with the most scene infos will get used. 
 
 
