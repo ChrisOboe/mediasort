@@ -84,5 +84,6 @@ and the following ones can be used in the episode destinations:
 ## known oddities
 - when having movies in a folder with a number it is recognized as episode. so either force movies via commandline, or use folders without numbers.
 - when having videos in subfolders, the subfolder with the most scene infos will get used. 
+- tmdb has problems with surpressed apostrophes e.g. bobs burgers won't find anything, bob burgers or bob's burgers will work.
 
 
