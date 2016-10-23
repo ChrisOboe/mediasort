@@ -42,6 +42,16 @@ nfo_destination = %(base_path)s/$t ($y).nfo
 backdrop_destination = %(base_path)s/fanart.jpg
 # The destination where the poster will be downloaded
 poster_destination = %(base_path)s/poster.jpg
+
+[episode]
+base_path = /var/lib/series/$st ($y)
+video_destination = %(base_path)s/Season $sn/S$snE$en $et.$ext
+episode_nfo_destination = %(base_path)s/Season $sn/S$snE$en $et.nfo
+series_nfo_destination = %(base_path)s/tvshow.nfo
+series_poster_destination = %(base_path)s/poster.jpg
+series_backdrop_destination = %(base_path)s/fanart.jpg
+season_poster_destination = %(base_path)s/season$sn-poster.jpg
+episode_thumb_destination = %(base_path)s/Season $sn/S$snE$en $et-thumb.jpg
 ```
 
 The following special vars can be used in the movie destinations:
@@ -51,6 +61,18 @@ The following special vars can be used in the movie destinations:
 | $t | The title of the movie     |
 | $ot | The original title of the movie |
 | $y | The year of the movie |
+| $ext | The file extension of the original file |
+
+and the following ones can be used in the episode destinations:
+
+| Variable | Replacement |
+| -------- | -------- | 
+| $st | The title of the series     |
+| $sot | The original title of the series |
+| $y | The first air date of the series |
+| $et | The title of the episode |
+| $sn | The season number |
+| $en | The episode number |
 | $ext | The file extension of the original file |
 
 ## Known bugs
