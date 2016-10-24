@@ -26,8 +26,10 @@ def parse_arguments():
     parser.add_argument("source",
             help="either a file that should be sorted, or a folder "
             "where every found media files are recursively sorted")
-    parser.add_argument('-c','--config', required=True,
+    parser.add_argument('-c', '--config', required=True,
             help="the config file")
+    parser.add_argument('-f', '--force',
+            help="force either a episode or a movie")
 
     return parser.parse_args()
 
@@ -46,10 +48,13 @@ def parse_configfile(path):
             'simulate_nfo':config.getboolean('general','simulate_nfo', fallback=False),
             'tmdb_api_key':config.get('general','tmdb_api_key', fallback='bd65f46c799046c2d4286966d76c37c6'),
             'allowed_extensions':config.get('general','allowed_extensions', fallback='mkv avi').split(),
-            'minimal_file_size':int(config.get('general', 'minimal_file_size', fallback='100'))*1048576,
-            'poster_size':config.get('general','poster_size', fallback='w500'),
-            'backdrop_size':config.get('general','backdrop_size', fallback='w1280'),
-            'thumb_size':config.get('general', 'thumb_size', fallback='w300')
+            'minimal_file_size':int(config.get('general', 'minimal_file_size', fallback='100'))*1048576
+            },
+        'images':{
+            'https_download':config.getboolean('images','https_download', fallback=False),
+            'poster_size':config.get('images','poster_size', fallback='w500'),
+            'backdrop_size':config.get('images','backdrop_size', fallback='w1280'),
+            'thumb_size':config.get('images', 'thumb_size', fallback='w300')
             },
         'movie':{
             'video_destination':config.get('movie','video_destination', fallback='/var/lib/media/movies/$t ($y)/$t ($y).$ext'),
@@ -59,7 +64,7 @@ def parse_configfile(path):
             },
         'episode':{
             'video_destination':config.get('episode','video_destination', fallback='/var/lib/media/series/$st ($y)/Season $sn/S$snE$en $et.$ext'),
-            'episode_nfo_destination':config.get('episode','series_nfo_destination', fallback='/var/lib/media/series/$st ($y)/Season $sn/S$snE$en $et.nfo'),
+            'episode_nfo_destination':config.get('episode','episode_nfo_destination', fallback='/var/lib/media/series/$st ($y)/Season $sn/S$snE$en $et.nfo'),
             'series_nfo_destination':config.get('episode','series_nfo_destination', fallback='/var/lib/media/series/$st ($y)/tvshow.nfo'),
             'series_poster_destination':config.get('episode','series_poster_destination', fallback='/var/lib/media/series/$st ($y)/poster.jpg'),
             'series_backdrop_destination':config.get('episode','series_backdrop_destination', fallback='/var/lib/media/series/$st ($y)/fanart.jpg'),

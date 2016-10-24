@@ -17,14 +17,22 @@
 from guessit import guessit
 import logging
 
-def guess_vid(filename):
+def guess_vid(filename, forced_type):
     logging.info("  Guessing by filename")
-    guess = guessit(filename)
+    options = {}
+    options['type'] = forced_type
+    guess = guessit(filename, options)
     if guess['type'] == 'episode':
         logging.info("    Guessed type:    episode")
-        logging.info("    Guessed title:   {0}".format(guess['title']))
-        logging.info("    Guessed season:  {0}".format(guess['season']))
-        logging.info("    Guessed episode: {0}".format(guess['episode']))
+        if 'title' in guess: logging.info("    Guessed title:   {0}".format(guess['title']))
+        if 'season' in guess:
+            logging.info("    Guessed season:  {0}".format(guess['season']))
+        else:
+            raise LookupError("Couldn't guess season")
+        if 'episode' in guess:
+            logging.info("    Guessed episode: {0}".format(guess['episode']))
+        else:
+            raise LookupError("Couldn't guess episode")
     elif guess['type'] == 'movie':
         logging.info("    Guessed type:  movie")
         logging.info("    Guessed title: {0}".format(guess['title']))

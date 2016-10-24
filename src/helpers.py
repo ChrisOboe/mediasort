@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import urllib
+from urllib.request import urlretrieve
 import logging
 import os
 
@@ -27,7 +27,7 @@ def download(src, dst, simulate):
     logging.info("  Downloading\n    from: {0}\n    to:   {1}".format(src, dst))
     if not simulate:
         create_path(dst)
-        urllib.urlretrieve(src, dst)
+        urlretrieve(src, dst)
 
 def create_path(path):
     dirname = os.path.dirname(path)

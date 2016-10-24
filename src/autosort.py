@@ -28,6 +28,8 @@ import config
 args = config.parse_arguments()
 config = config.parse_configfile(args.config)
 
+if args.force != "episode" and args.force != "movie": args.force = None
+
 # logging
 log = logging.getLogger()
 log.setLevel(logging.INFO)
@@ -44,6 +46,11 @@ tmdb_config = tmdb.get_config(
         os.path.expanduser(config['general']['cache_path'])+'tmdb.cache',
         config['general']['tmdb_config_cache_days']
         )
+
+if config['images']['https_download']:
+    image_url = tmdb_config['images']['secure_base_url']
+else:
+    image_url = tmdb_config['images']['base_url']
 
 from guess import guess_vid
 import fs
@@ -66,8 +73,12 @@ for videofile in videofiles:
     videofile_extension = os.path.splitext(videofile_basename)[1].lower()[1:]
 
     print("\nProcessing \"{0}\"".format(videofile_abspath))
-    guess = guess_vid(videofile_abspath)
-
+    try:
+        guess = guess_vid(videofile_abspath, args.force)
+    except LookupError as err:
+        print(err)
+        print("Skipping this file")
+        continue
 
     tmdb_id = tmdb.get_id(guess['type'], guess['title'], None if 'year' not in guess else guess['year'])
     if not tmdb_id:
@@ -95,14 +106,14 @@ for videofile in videofiles:
 
         # download fanart
         helpers.download(
-                tmdb_config['images']['secure_base_url']+config['general']['backdrop_size']+movie['backdrop_path'],
+                image_url+config['images']['backdrop_size']+movie['backdrop_path'],
                 helpers.replace_by_rule(replacement_rules, config['movie']['backdrop_destination']),
                 config['general']['simulate_download']
                 )
 
         # download poster
         helpers.download(
-                tmdb_config['images']['secure_base_url']+config['general']['poster_size']+movie['poster_path'],
+                image_url+config['images']['poster_size']+movie['poster_path'],
                 helpers.replace_by_rule(replacement_rules, config['movie']['poster_destination']),
                 config['general']['simulate_download']
                 )
@@ -141,8 +152,8 @@ for videofile in videofiles:
 
         # download series poster
         helpers.download(
-            tmdb_config['images']['secure_base_url']
-                +config['general']['poster_size']
+            image_url
+                +config['images']['poster_size']
                 +tvshows[tmdb_id]['poster_path'],
             helpers.replace_by_rule(replacement_rules, config['episode']['series_poster_destination']),
             config['general']['simulate_download']
@@ -150,8 +161,8 @@ for videofile in videofiles:
 
         # download series backdrop
         helpers.download(
-            tmdb_config['images']['secure_base_url']
-                +config['general']['backdrop_size']
+            image_url
+                +config['images']['backdrop_size']
                 +tvshows[tmdb_id]['backdrop_path'],
             helpers.replace_by_rule(replacement_rules, config['episode']['series_backdrop_destination']),
             config['general']['simulate_download']
@@ -159,8 +170,8 @@ for videofile in videofiles:
 
         # download season poster
         helpers.download(
-            tmdb_config['images']['secure_base_url']
-                +config['general']['poster_size']
+            image_url
+                +config['images']['poster_size']
                 +tvshows[tmdb_id]['seasons'][episode['season_number']]['poster_path'],
             helpers.replace_by_rule(replacement_rules, config['episode']['season_poster_destination']),
             config['general']['simulate_download']
@@ -168,8 +179,8 @@ for videofile in videofiles:
 
         # download episode_thumb
         helpers.download(
-            tmdb_config['images']['secure_base_url']
-                +config['general']['thumb_size']
+            image_url
+                +config['images']['thumb_size']
                 +episode['still_path'],
             helpers.replace_by_rule(replacement_rules, config['episode']['episode_thumb_destination']),
             config['general']['simulate_download']

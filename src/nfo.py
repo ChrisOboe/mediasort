@@ -114,7 +114,7 @@ def write_movie_nfo(tmdb, nfo_destination, language, simulate):
     general['title'] = tmdb['title']
     general['originaltitle'] = tmdb['original_title']
     if tmdb['belongs_to_collection']:
-        general['set'] = tmdb['belongs_to_collection']
+        general['set'] = tmdb['belongs_to_collection']['name']
     general['year'] = tmdb['release_date'] # maybe we only want a year
 
     general['runtime'] = str(tmdb['runtime'])

@@ -25,7 +25,6 @@ def move(src, dst, simulate):
         raise FileExistsError("{0} already exists.".format(dst))
     if not simulate:
         create_path(dst)
-        logging.info(logmsg)
         shutil.move(src, dst)
 
 def find_video_files(path, extensions, filesize):
