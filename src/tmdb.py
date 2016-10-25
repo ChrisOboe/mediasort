@@ -52,7 +52,7 @@ def get_config(cachefile, validity):
     lastaccess = dateutil.parser.parse(tmdb_config['lastaccess'])
     if (datetime.datetime.now() - lastaccess).days > validity:
         logging.info("Cachefile exists, but is too old")
-        return download_tmdb_config()
+        return download_config(cachefile)
     else:
         logging.info("Using config from cache")
         return tmdb_config
@@ -78,6 +78,7 @@ def get_id(video_type, title, year):
     else:
         logging.info("    We have exatly one match at TMDb.")
 
+    logging.info("    Using TMDb ID: {0}".format(tmdb_search.results[0]['id']))
     return tmdb_search.results[0]['id']
 
 

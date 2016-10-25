@@ -53,6 +53,7 @@ def write_series_nfo(series, nfo_destination, language, simulate):
     for rating in series['content_ratings']['results']:
         if rating['iso_3166_1'] == language:
             general['mpaa'] = rating['rating']
+    general['tmdb_id'] = series['id']
 
     studios = []
     for studio in series['networks']:
@@ -78,7 +79,7 @@ def write_series_nfo(series, nfo_destination, language, simulate):
 
     write_nfo(nfo, nfo_destination, simulate)
 
-def write_episode_nfo(series, episode, nfo_destination, simulate):
+def write_episode_nfo(series, episode, releasegroup, source, nfo_destination, simulate):
     general = collections.OrderedDict()
     general['title'] = episode['name']
     general['showtitle'] = series['name']
@@ -88,6 +89,9 @@ def write_episode_nfo(series, episode, nfo_destination, simulate):
     general['episode'] = episode['episode_number']
     general['plot'] = episode['overview']
     general['aired'] = episode['air_date']
+    if releasegroup: general['releasegroup'] = releasegroup
+    if source: general['source'] = source
+    general['tmdb_id'] = series['id']
 
     directors = []
     writers = []
@@ -107,43 +111,45 @@ def write_episode_nfo(series, episode, nfo_destination, simulate):
 
     write_nfo(nfo, nfo_destination, simulate)
 
-
-def write_movie_nfo(tmdb, nfo_destination, language, simulate):
+def write_movie_nfo(movie, releasegroup, source, nfo_destination, language, simulate):
     # get the metadata
     general = collections.OrderedDict()
-    general['title'] = tmdb['title']
-    general['originaltitle'] = tmdb['original_title']
-    if tmdb['belongs_to_collection']:
-        general['set'] = tmdb['belongs_to_collection']['name']
-    general['year'] = tmdb['release_date'] # maybe we only want a year
+    general['title'] = movie['title']
+    general['originaltitle'] = movie['original_title']
+    if movie['belongs_to_collection']:
+        general['set'] = movie['belongs_to_collection']['name']
+    general['year'] = movie['release_date'] # maybe we only want a year
 
-    general['runtime'] = str(tmdb['runtime'])
+    general['runtime'] = str(movie['runtime'])
     general['mpaa'] = "Not available"
-    for release in tmdb['release_dates']['results']:
+    for release in movie['release_dates']['results']:
         if release['iso_3166_1'] == language:
             general['mpaa'] = str(release['release_dates'][0]['certification'])
 
-    general['tagline'] = tmdb['tagline']
-    general['plot'] = tmdb['overview']
-    general['rating'] = str(tmdb['vote_average'])
-    general['votes'] = str(tmdb['vote_count'])
+    general['tagline'] = movie['tagline']
+    general['plot'] = movie['overview']
+    general['rating'] = str(movie['vote_average'])
+    general['votes'] = str(movie['vote_count'])
+    if releasegroup: general['releasegroup'] = releasegroup
+    if source: general['source'] = source
+    general['tmdb_id'] = movie['id']
 
     studios = []
-    for studio in tmdb['production_companies']:
+    for studio in movie['production_companies']:
         studios.append(studio['name'])
 
     countries = []
-    for country in tmdb['production_countries']:
+    for country in movie['production_countries']:
         countries.append(country['name'])
 
     directors = []
     writers = []
-    for crew in tmdb['credits']['crew']:
+    for crew in movie['credits']['crew']:
         if crew['job'] == 'Director': directors.append(crew['name'])
         if crew['job'] == 'Writer': writers.append(crew['name'])
 
-    genres = get_genres(tmdb)
-    actors = get_actors(tmdb)
+    genres = get_genres(movie)
+    actors = get_actors(movie)
 
     nfo = ("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n"
            "<movie>\n")

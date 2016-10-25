@@ -21,10 +21,12 @@ import sys
 import os
 import logging
 import helpers
-
-from pprint import pprint
-
+from guess import guess_vid
+import fs
+import nfo
+import tmdb
 import config
+
 args = config.parse_arguments()
 config = config.parse_configfile(args.config)
 
@@ -40,7 +42,6 @@ log.addHandler(logout)
 
 logging.getLogger("requests").setLevel(logging.WARNING)
 
-import tmdb
 tmdb.set_api_key(config['general']['tmdb_api_key'])
 tmdb_config = tmdb.get_config(
         os.path.expanduser(config['general']['cache_path'])+'tmdb.cache',
@@ -52,9 +53,6 @@ if config['images']['https_download']:
 else:
     image_url = tmdb_config['images']['base_url']
 
-from guess import guess_vid
-import fs
-import nfo
 
 videofiles = fs.find_video_files(
     args.source,
@@ -67,25 +65,21 @@ tvshows = {}
 
 # process files
 for videofile in videofiles:
-
     videofile_basename = os.path.basename(videofile)
     videofile_abspath = os.path.abspath(videofile)
     videofile_extension = os.path.splitext(videofile_basename)[1].lower()[1:]
+    nfofile = os.path.splitext(videofile_abspath)[0]+".nfo"
 
     print("\nProcessing \"{0}\"".format(videofile_abspath))
     try:
-        guess = guess_vid(videofile_abspath, args.force)
+        guess = guess_vid(videofile_abspath, nfofile ,args.force)
     except LookupError as err:
         print(err)
         print("Skipping this file")
         continue
 
-    tmdb_id = tmdb.get_id(guess['type'], guess['title'], None if 'year' not in guess else guess['year'])
-    if not tmdb_id:
-        continue
-
     if guess['type'] == 'movie':
-        movie = tmdb.get_movie_info(tmdb_id, config['general']['language'])
+        movie = tmdb.get_movie_info(guess["tmdb_id"], config['general']['language'])
 
         replacement_rules = {
             '$t':helpers.filter_fs_chars(movie['title']),
@@ -121,19 +115,21 @@ for videofile in videofiles:
         # write nfo
         nfo.write_movie_nfo(
                 movie,
+                None if "releasegroup" not in guess else guess["releasegroup"],
+                None if "source" not in guess else guess["source"],
                 helpers.replace_by_rule(replacement_rules, config['movie']['nfo_destination']),
                 config['general']['language'],
                 config['general']['simulate_nfo']
                 )
 
     elif guess['type'] == 'episode':
-        if not tmdb_id in tvshows: tvshows[tmdb_id] = tmdb.get_tvshow_info(tmdb_id, config['general']['language'])
-        episode = tmdb.get_episode_info(tmdb_id, guess['season'], guess['episode'], config['general']['language'])
+        if not guess["tmdb_id"] in tvshows: tvshows[guess["tmdb_id"]] = tmdb.get_tvshow_info(guess["tmdb_id"], config['general']['language'])
+        episode = tmdb.get_episode_info(guess["tmdb_id"], guess['season'], guess['episode'], config['general']['language'])
 
         replacement_rules = {
-            '$st':helpers.filter_fs_chars(tvshows[tmdb_id]['name']),
-            '$sot':helpers.filter_fs_chars(tvshows[tmdb_id]['original_name']),
-            '$y':str(dateutil.parser.parse(tvshows[tmdb_id]['first_air_date']).year),
+            '$st':helpers.filter_fs_chars(tvshows[guess["tmdb_id"]]['name']),
+            '$sot':helpers.filter_fs_chars(tvshows[guess["tmdb_id"]]['original_name']),
+            '$y':str(dateutil.parser.parse(tvshows[guess["tmdb_id"]]['first_air_date']).year),
             '$et':helpers.filter_fs_chars(episode['name']),
             '$sn':str(episode['season_number']).zfill(2),
             '$en':str(episode['episode_number']).zfill(2),
@@ -154,7 +150,7 @@ for videofile in videofiles:
         helpers.download(
             image_url
                 +config['images']['poster_size']
-                +tvshows[tmdb_id]['poster_path'],
+                +tvshows[guess["tmdb_id"]]['poster_path'],
             helpers.replace_by_rule(replacement_rules, config['episode']['series_poster_destination']),
             config['general']['simulate_download']
             )
@@ -163,7 +159,7 @@ for videofile in videofiles:
         helpers.download(
             image_url
                 +config['images']['backdrop_size']
-                +tvshows[tmdb_id]['backdrop_path'],
+                +tvshows[guess["tmdb_id"]]['backdrop_path'],
             helpers.replace_by_rule(replacement_rules, config['episode']['series_backdrop_destination']),
             config['general']['simulate_download']
             )
@@ -172,7 +168,7 @@ for videofile in videofiles:
         helpers.download(
             image_url
                 +config['images']['poster_size']
-                +tvshows[tmdb_id]['seasons'][episode['season_number']]['poster_path'],
+                +tvshows[guess["tmdb_id"]]['seasons'][episode['season_number']]['poster_path'],
             helpers.replace_by_rule(replacement_rules, config['episode']['season_poster_destination']),
             config['general']['simulate_download']
             )
@@ -188,7 +184,7 @@ for videofile in videofiles:
 
         # write series nfo
         nfo.write_series_nfo(
-                tvshows[tmdb_id],
+                tvshows[guess["tmdb_id"]],
                 helpers.replace_by_rule(replacement_rules, config['episode']['series_nfo_destination']),
                 config['general']['language'],
                 config['general']['simulate_nfo']
@@ -196,8 +192,10 @@ for videofile in videofiles:
 
         # write episode nfo
         nfo.write_episode_nfo(
-                tvshows[tmdb_id],
+                tvshows[guess["tmdb_id"]],
                 episode,
+                None if "releasegroup" not in guess else guess["releasegroup"],
+                None if "source" not in guess else guess["source"],
                 helpers.replace_by_rule(replacement_rules, config['episode']['episode_nfo_destination']),
                 config['general']['simulate_nfo']
                 )

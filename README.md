@@ -5,9 +5,10 @@ It then uses this informations to scrape the metadata from TMDb by using the tmd
 
 ## Usage
 ```
-autosort.py [-h] -c CONFIG source
+autosort.py [-h] -c CONFIG [-f type] source
 ```
 - CONFIG has to be a valid config file for autosort
+- With -f or --force you can force either "movie" or "episode".
 - source can be a video file or a folder which will be recursivly searched
 
 ## Config file
