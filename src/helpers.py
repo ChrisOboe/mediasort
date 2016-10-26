@@ -25,9 +25,10 @@ def replace_by_rule(rules, string):
         string = string.replace(rule, rules[rule])
     return string
 
-def download(src, dst, simulate):
-    if dst in downloaded:
-        return
+def download(src, dst, simulate, overwrite):
+    if dst in downloaded: return
+    if not overwrite and os.path.exists(dst): return
+
     logging.info("  Downloading\n    from: {0}\n    to:   {1}".format(src, dst))
     downloaded.append(dst)
     if not simulate:

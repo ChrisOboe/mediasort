@@ -19,17 +19,17 @@ import shutil
 import logging
 from helpers import create_path
 
-def move(src, dst, simulate):
-    logging.info("  Moving\n    from: {0}\n    to:   {1}".format(src, dst))
-    if os.path.exists(dst):
+def move(src, dst, simulate, overwrite):
+    if not overwrite and os.path.exists(dst):
         raise FileExistsError("{0} already exists.".format(dst))
+
+    logging.info("  Moving\n    from: {0}\n    to:   {1}".format(src, dst))
     if not simulate:
         create_path(dst)
         shutil.move(src, dst)
 
 def find_video_files(path, extensions, filesize):
-    if not os.path.exists(path):
-        return
+    if not os.path.exists(path): return
 
     video_files = []
     if os.path.isfile(path):

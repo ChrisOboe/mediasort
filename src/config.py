@@ -48,7 +48,10 @@ def parse_configfile(path):
             'simulate_nfo':config.getboolean('general','simulate_nfo', fallback=False),
             'tmdb_api_key':config.get('general','tmdb_api_key', fallback='bd65f46c799046c2d4286966d76c37c6'),
             'allowed_extensions':config.get('general','allowed_extensions', fallback='mkv avi').split(),
-            'minimal_file_size':int(config.get('general', 'minimal_file_size', fallback='100'))*1048576
+            'minimal_file_size':int(config.get('general', 'minimal_file_size', fallback='100'))*1048576,
+            'overwrite_nfos':config.getboolean('general','overwrite_nfos', fallback=True),
+            'overwrite_images':config.getboolean('general','overwrite_images', fallback=True),
+            'overwrite_videos':config.getboolean('general','overwrite_videos', fallback=False)
             },
         'images':{
             'https_download':config.getboolean('images','https_download', fallback=False),

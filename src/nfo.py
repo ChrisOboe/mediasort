@@ -42,9 +42,9 @@ def write_nfo(nfo, destination, simulate):
         with open(destination, 'w') as nfofile:
             nfofile.write(nfo)
 
-def write_series_nfo(series, nfo_destination, language, simulate):
-    if nfo_destination in series_written:
-        return
+def write_series_nfo(series, nfo_destination, language, simulate, overwrite):
+    if not overwrite and os.path.exists(nfo_destination): return
+    if nfo_destination in series_written: return
 
     general = collections.OrderedDict()
     general['title'] = series['name']
@@ -84,7 +84,9 @@ def write_series_nfo(series, nfo_destination, language, simulate):
     write_nfo(nfo, nfo_destination, simulate)
     series_written.append(nfo_destination)
 
-def write_episode_nfo(series, episode, releasegroup, source, nfo_destination, simulate):
+def write_episode_nfo(series, episode, releasegroup, source, nfo_destination, simulate, overwrite):
+    if not overwrite and os.path.exists(nfo_destination): return
+
     general = collections.OrderedDict()
     general['title'] = episode['name']
     general['showtitle'] = series['name']
@@ -116,7 +118,8 @@ def write_episode_nfo(series, episode, releasegroup, source, nfo_destination, si
 
     write_nfo(nfo, nfo_destination, simulate)
 
-def write_movie_nfo(movie, releasegroup, source, nfo_destination, language, simulate):
+def write_movie_nfo(movie, releasegroup, source, nfo_destination, language, simulate, overwrite):
+    if not overwrite and os.path.exists(nfo_destination): return
     # get the metadata
     general = collections.OrderedDict()
     general['title'] = movie['title']

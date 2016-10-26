@@ -92,7 +92,8 @@ for videofile in videofiles:
         try:
             fs.move(videofile_abspath,
                     helpers.replace_by_rule(replacement_rules, config['movie']['video_destination']),
-                    config['general']['simulate_move'])
+                    config['general']['simulate_move'],
+                    config['general']['overwrite_videos'])
         except FileExistsError as err:
             print(err)
             print("Skipping this file")
@@ -102,14 +103,16 @@ for videofile in videofiles:
         helpers.download(
                 image_url+config['images']['backdrop_size']+movie['backdrop_path'],
                 helpers.replace_by_rule(replacement_rules, config['movie']['backdrop_destination']),
-                config['general']['simulate_download']
+                config['general']['simulate_download'],
+                config['general']['overwrite_images']
                 )
 
         # download poster
         helpers.download(
                 image_url+config['images']['poster_size']+movie['poster_path'],
                 helpers.replace_by_rule(replacement_rules, config['movie']['poster_destination']),
-                config['general']['simulate_download']
+                config['general']['simulate_download'],
+                config['general']['overwrite_images']
                 )
 
         # write nfo
@@ -119,7 +122,8 @@ for videofile in videofiles:
                 None if "source" not in guess else guess["source"],
                 helpers.replace_by_rule(replacement_rules, config['movie']['nfo_destination']),
                 config['general']['language'],
-                config['general']['simulate_nfo']
+                config['general']['simulate_nfo'],
+                config['general']['overwrite_nfos']
                 )
 
     elif guess['type'] == 'episode':
@@ -140,7 +144,8 @@ for videofile in videofiles:
         try:
             fs.move(videofile_abspath,
                     helpers.replace_by_rule(replacement_rules, config['episode']['video_destination']),
-                    config['general']['simulate_move'])
+                    config['general']['simulate_move'],
+                    config['general']['overwrite_videos'])
         except FileExistsError as err:
             print(err)
             print("Skipping this file")
@@ -152,7 +157,8 @@ for videofile in videofiles:
                 +config['images']['poster_size']
                 +tvshows[guess["tmdb_id"]]['poster_path'],
             helpers.replace_by_rule(replacement_rules, config['episode']['series_poster_destination']),
-            config['general']['simulate_download']
+            config['general']['simulate_download'],
+            config['general']['overwrite_images']
             )
 
         # download series backdrop
@@ -161,7 +167,8 @@ for videofile in videofiles:
                 +config['images']['backdrop_size']
                 +tvshows[guess["tmdb_id"]]['backdrop_path'],
             helpers.replace_by_rule(replacement_rules, config['episode']['series_backdrop_destination']),
-            config['general']['simulate_download']
+            config['general']['simulate_download'],
+            config['general']['overwrite_images']
             )
 
         # download season poster
@@ -170,7 +177,8 @@ for videofile in videofiles:
                 +config['images']['poster_size']
                 +tvshows[guess["tmdb_id"]]['seasons'][episode['season_number']]['poster_path'],
             helpers.replace_by_rule(replacement_rules, config['episode']['season_poster_destination']),
-            config['general']['simulate_download']
+            config['general']['simulate_download'],
+            config['general']['overwrite_images']
             )
 
         # download episode_thumb
@@ -179,7 +187,8 @@ for videofile in videofiles:
                 +config['images']['thumb_size']
                 +episode['still_path'],
             helpers.replace_by_rule(replacement_rules, config['episode']['episode_thumb_destination']),
-            config['general']['simulate_download']
+            config['general']['simulate_download'],
+            config['general']['overwrite_images']
             )
 
         # write series nfo
@@ -187,7 +196,8 @@ for videofile in videofiles:
                 tvshows[guess["tmdb_id"]],
                 helpers.replace_by_rule(replacement_rules, config['episode']['series_nfo_destination']),
                 config['general']['language'],
-                config['general']['simulate_nfo']
+                config['general']['simulate_nfo'],
+                config['general']['overwrite_nfos']
                 )
 
         # write episode nfo
@@ -197,7 +207,8 @@ for videofile in videofiles:
                 None if "releasegroup" not in guess else guess["releasegroup"],
                 None if "source" not in guess else guess["source"],
                 helpers.replace_by_rule(replacement_rules, config['episode']['episode_nfo_destination']),
-                config['general']['simulate_nfo']
+                config['general']['simulate_nfo'],
+                config['general']['overwrite_nfos']
                 )
 
     else:
