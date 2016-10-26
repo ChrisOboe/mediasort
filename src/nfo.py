@@ -18,6 +18,8 @@ import logging
 from helpers import create_path
 import collections
 
+series_written = []
+
 def get_actors(tmdb):
     actors = []
     for actor in tmdb['credits']['cast']:
@@ -41,7 +43,9 @@ def write_nfo(nfo, destination, simulate):
             nfofile.write(nfo)
 
 def write_series_nfo(series, nfo_destination, language, simulate):
-    general = collections.OrderedDict()
+    if nfo_destination in series_written:
+        return
+
     general = collections.OrderedDict()
     general['title'] = series['name']
     general['rating'] = series['vote_average']
@@ -78,6 +82,7 @@ def write_series_nfo(series, nfo_destination, language, simulate):
     nfo += "</tvshow>"
 
     write_nfo(nfo, nfo_destination, simulate)
+    series_written.append(nfo_destination)
 
 def write_episode_nfo(series, episode, releasegroup, source, nfo_destination, simulate):
     general = collections.OrderedDict()

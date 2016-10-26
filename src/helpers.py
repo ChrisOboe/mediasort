@@ -18,13 +18,18 @@ from urllib.request import urlretrieve
 import logging
 import os
 
+downloaded = []
+
 def replace_by_rule(rules, string):
     for rule in rules:
         string = string.replace(rule, rules[rule])
     return string
 
 def download(src, dst, simulate):
+    if dst in downloaded:
+        return
     logging.info("  Downloading\n    from: {0}\n    to:   {1}".format(src, dst))
+    downloaded.append(dst)
     if not simulate:
         create_path(dst)
         urlretrieve(src, dst)
