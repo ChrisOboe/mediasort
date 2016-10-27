@@ -1,4 +1,4 @@
-# Autosort Readme
+# MediaSort Readme
 Autosort is a tool which can automaticly sort movies and episodes from scene releases.
 It's written in python and uses the guessit library for guessing informations based on filename / foldername.
 It then uses this informations to scrape the metadata from TMDb by using the tmdbsimple library.
