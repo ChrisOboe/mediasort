@@ -14,51 +14,67 @@ autosort.py [-h] -c CONFIG [-f type] source
 ## Config file
 A example config file looks like the following:
 ```
+[debug]
+# when simulation is on it doesn't write/move files
+simulate_nfo = False
+simulate_images = False
+simulate_move = False
+
 [general]
 # The language for the TMDb scraping
 language = EN-US
-# The path where stuff is cached. At the moment only the general TMDb config is cached
+# The path where stuff is cached.
+# At the moment only the general TMDb config is cached
 cache_path = ~/.cache/autosort/
-# The days the cache is valid.
-tmdb_config_cache_days = 7
-# If specific actions should be simulated. Usefull if you don't trust this software (And you shouldn't, it isn't tested very much)
-simulate_move = yes
-simulate_download = yes
-simulate_nfo = yes
-# The TMDb api key
-tmdb_api_key =   bd65f46c799046c2d4286966d76c37c6
+# allow or disallow overwriting of existing files
+overwrite_nfos = True
+overwrite_images = True
+overwrite_videos = False
+
+[videofiles]
 # Only files which this extensions are used
 allowed_extensions = avi mkv
 # Only files bigger than this size in MB will be used
 minimal_file_size = 100
+
+[tmdb]
+# The days the cache is valid.
+tmdb_config_cache_days = 7
+# The TMDb api key
+tmdb_api_key =   bd65f46c799046c2d4286966d76c37c6
+# if images should be downloaded via https
+https_download = False
 # The size of the poster
 poster_size = w500
 # The size of the backdrop / fanart
 backdrop_size = w1280
 # The size of the episode thumbnail
-tumb_size = w300
+still_size = w300
 
 [movie]
 # A custom entry which can be accessed by %(entry_name)s
 base_path = /var/lib/movies/$t ($y)
 # The destination where the movies are moved
-video_destination = %(base_path)s/$t ($y).$ext
+movie = %(base_path)s/$t ($y).$ext
 # The destination where the nfo will be written to
-nfo_destination = %(base_path)s/$t ($y).nfo
+nfo = %(base_path)s/$t ($y).nfo
 # The destination where the backdrop will be downloaded
-backdrop_destination = %(base_path)s/fanart.jpg
+backdrop = %(base_path)s/fanart.jpg
 # The destination where the poster will be downloaded
-poster_destination = %(base_path)s/poster.jpg
+poster = %(base_path)s/poster.jpg
+
+[tvshow]
+base_path = /var/lib/series/$st ($y)
+nfo = %(base_path)s/tvshow.nfo
+poster = %(base_path)s/poster.jpg
+backdrop = %(base_path)s/fanart.jpg
+season_poster = %(base_path)s/season$sn-poster.jpg
 
 [episode]
 base_path = /var/lib/series/$st ($y)
-video_destination = %(base_path)s/Season $sn/S$snE$en $et.$ext
-episode_nfo_destination = %(base_path)s/Season $sn/S$snE$en $et.nfo
-series_nfo_destination = %(base_path)s/tvshow.nfo
-series_poster_destination = %(base_path)s/poster.jpg
-series_backdrop_destination = %(base_path)s/fanart.jpg
-season_poster_destination = %(base_path)s/season$sn-poster.jpg
-episode_thumb_destination = %(base_path)s/Season $sn/S$snE$en $et-thumb.jpg
+episode = %(base_path)s/Season $sn/S$snE$en $et.$ext
+nfo = %(base_path)s/Season $sn/S$snE$en $et.nfo
+still = %(base_path)s/Season $sn/S$snE$en $et-thumb.jpg
 ```
 
 The following special vars can be used in the movie destinations:
