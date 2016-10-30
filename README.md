@@ -9,10 +9,12 @@ run.py [-h] [-v] [-c CONFIG] [-f type] source
 ```
 
 ### Arguments
--h --help shows help
--v --verbose be more verbose
--c --config the configfile to use. Defaults to xdg_config_home/mediasort/config.ini
--t --force-type force either "episode" or "movie"
+| short | long | description |
+| -------- | -------- | -------- | 
+| -h | --help | shows help |
+| -v | --verbose | be more verbose |
+| -c | --config | the configfile to use. Defaults to xdg_config_home/mediasort/config.ini |
+| -t | --force-type | force either "episode" or "movie" |
 
 ## Config file
 A example config file looks like the following:
