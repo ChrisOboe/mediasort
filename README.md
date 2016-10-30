@@ -5,11 +5,14 @@ It then uses this informations to scrape the metadata from TMDb by using the tmd
 
 ## Usage
 ```
-autosort.py [-h] -c CONFIG [-f type] source
+run.py [-h] [-v] [-c CONFIG] [-f type] source
 ```
-- CONFIG has to be a valid config file for autosort
-- With -f or --force you can force either "movie" or "episode".
-- source can be a video file or a folder which will be recursivly searched
+
+### Arguments
+-h --help shows help
+-v --verbose be more verbose
+-c --config the configfile to use. Defaults to xdg_config_home/mediasort/config.ini
+-t --force-type force either "episode" or "movie"
 
 ## Config file
 A example config file looks like the following:
