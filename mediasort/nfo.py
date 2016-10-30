@@ -98,8 +98,16 @@ def write_series_nfo(series, language, dst, simulate=False, overwrite=False):
 
 def write_episode_nfo(series, episode, dst, releasegroup=None, source=None,
                       simulate=False, overwrite=False):
+    """ writes the nfo of a episode """
     if not overwrite and os.path.exists(dst):
         return
+
+    actors = get_actors(series)
+    for tmdb_actor in episode['guest_stars']:
+        actor = {}
+        actor['name'] = tmdb_actor['name']
+        actor['role'] = tmdb_actor['character']
+        actors.append(actor)
 
     general = collections.OrderedDict()
     general['title'] = episode['name']
@@ -110,15 +118,19 @@ def write_episode_nfo(series, episode, dst, releasegroup=None, source=None,
     general['episode'] = episode['episode_number']
     general['plot'] = episode['overview']
     general['aired'] = episode['air_date']
-    if releasegroup: general['releasegroup'] = releasegroup
-    if source: general['source'] = source
+    if releasegroup:
+        general['releasegroup'] = releasegroup
+    if source:
+        general['source'] = source
     general['tmdb_id'] = series['id']
 
     directors = []
     writers = []
     for crew in episode['crew']:
-        if crew['job'] == 'Director': directors.append(crew['name'])
-        if crew['job'] == 'Writer': writers.append(crew['name'])
+        if crew['job'] == 'Director':
+            directors.append(crew['name'])
+        if crew['job'] == 'Writer':
+            writers.append(crew['name'])
 
     nfo = ("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n"
            "<episodedetails>\n")
@@ -128,6 +140,11 @@ def write_episode_nfo(series, episode, dst, releasegroup=None, source=None,
         nfo += "\t<director>{0}</director>\n".format(director)
     for writer in writers:
         nfo += "\t<credits>{0}</credits>\n".format(writer)
+    for actor in actors:
+        nfo += ("\t<actor>\n"
+                "\t\t<name>{0}</name>\n"
+                "\t\t<role>{1}</role>\n"
+                "\t</actor>\n").format(actor['name'], actor['role'])
     nfo += "</episodedetails>"
 
     write_nfo(nfo, dst, simulate)
