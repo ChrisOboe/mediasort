@@ -14,25 +14,31 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+""" helper functions for tmdbsimple """
+
 import os
-import tmdbsimple
 import logging
 import datetime
-import dateutil.parser
 import json
-import helpers
+import dateutil.parser
+import tmdbsimple
+
+from . import helpers
 
 logging.getLogger("tmdbsimple").setLevel(logging.WARNING)
 
+
 def set_api_key(apikey):
+    """ Sets the TMDb API key """
     tmdbsimple.API_KEY = apikey
 
-# downloads and caches the tmdb config
+
 def download_config(cachefile):
+    """ downloads and caches the tmdb config """
     logging.info("Downloading TMDb config")
     tmdb_config = tmdbsimple.Configuration().info()
     tmdb_config['lastaccess'] = datetime.datetime.now().strftime('%Y-%m-%d %H:%M')
-    helpers.create_path(os.path.dirname(cachefile))
+    helpers.create_path(cachefile)
     with open(cachefile, 'w') as cf:
         json.dump(tmdb_config, cf)
     return tmdb_config

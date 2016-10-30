@@ -14,12 +14,16 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+""" filesystem helper functions for mediasort """
+
 import os
 import shutil
 import logging
-from helpers import create_path
+from .helpers import create_path
 
-def move(src, dst, simulate, overwrite):
+
+def move(src, dst, simulate=False, overwrite=False):
+    """ moves a file from src to dst """
     if not overwrite and os.path.exists(dst):
         raise FileExistsError("{0} already exists.".format(dst))
 
@@ -28,8 +32,14 @@ def move(src, dst, simulate, overwrite):
         create_path(dst)
         shutil.move(src, dst)
 
-def find_video_files(path, extensions, filesize):
-    if not os.path.exists(path): return
+
+def find(path, extensions, filesize):
+    """ returns all files with given extensions
+    and bigger than filesize in path """
+
+    filesize *= 1048576  # use filesize as MB
+    if not os.path.exists(path):
+        return
 
     video_files = []
     if os.path.isfile(path):
@@ -41,8 +51,9 @@ def find_video_files(path, extensions, filesize):
             for filename in files:
                 filepath = os.path.join(root, filename)
                 ext = os.path.splitext(filename)[1].lower()[1:]
-                if ext not in extensions: continue
-                if os.path.getsize(filepath) < filesize: continue
+                if (ext not in extensions) or \
+                   (os.path.getsize(filepath) < filesize):
+                    continue
                 video_files.append(filepath)
 
     return video_files

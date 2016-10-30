@@ -14,37 +14,48 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import logging
-from helpers import create_path
-import collections
+""" helpers for writing a nfo file """
 
-series_written = []
+import logging
+import os
+import collections
+from .helpers import create_path
+
+SERIES_WRITTEN = []
+
 
 def get_actors(tmdb):
+    """ helper for writing actors in a dict """
     actors = []
-    for actor in tmdb['credits']['cast']:
-        a = {}
-        a['name'] = actor['name']
-        a['role'] = actor['character']
-        actors.append(a)
+    for tmdb_actor in tmdb['credits']['cast']:
+        actor = {}
+        actor['name'] = tmdb_actor['name']
+        actor['role'] = tmdb_actor['character']
+        actors.append(actor)
     return actors
 
+
 def get_genres(tmdb):
+    """ helper for writing genres in a dict """
     genres = []
     for genre in tmdb['genres']:
         genres.append(genre['name'])
     return genres
 
+
 def write_nfo(nfo, destination, simulate):
+    """ helper for writing the nfo file """
     logging.info("  Writing \"{0}\"".format(destination))
     if not simulate:
         create_path(destination)
         with open(destination, 'w') as nfofile:
             nfofile.write(nfo)
 
-def write_series_nfo(series, nfo_destination, language, simulate, overwrite):
-    if not overwrite and os.path.exists(nfo_destination): return
-    if nfo_destination in series_written: return
+
+def write_series_nfo(series, language, dst, simulate=False, overwrite=False):
+    if (not overwrite and os.path.exists(dst)) or \
+       (dst in SERIES_WRITTEN):
+        return
 
     general = collections.OrderedDict()
     general['title'] = series['name']
@@ -81,11 +92,14 @@ def write_series_nfo(series, nfo_destination, language, simulate, overwrite):
                 "\t</actor>\n").format(actor['name'], actor['role'])
     nfo += "</tvshow>"
 
-    write_nfo(nfo, nfo_destination, simulate)
-    series_written.append(nfo_destination)
+    write_nfo(nfo, dst, simulate)
+    SERIES_WRITTEN.append(dst)
 
-def write_episode_nfo(series, episode, releasegroup, source, nfo_destination, simulate, overwrite):
-    if not overwrite and os.path.exists(nfo_destination): return
+
+def write_episode_nfo(series, episode, dst, releasegroup=None, source=None,
+                      simulate=False, overwrite=False):
+    if not overwrite and os.path.exists(dst):
+        return
 
     general = collections.OrderedDict()
     general['title'] = episode['name']
@@ -116,17 +130,21 @@ def write_episode_nfo(series, episode, releasegroup, source, nfo_destination, si
         nfo += "\t<credits>{0}</credits>\n".format(writer)
     nfo += "</episodedetails>"
 
-    write_nfo(nfo, nfo_destination, simulate)
+    write_nfo(nfo, dst, simulate)
 
-def write_movie_nfo(movie, releasegroup, source, nfo_destination, language, simulate, overwrite):
-    if not overwrite and os.path.exists(nfo_destination): return
+
+def write_movie_nfo(movie, dst, language, releasegroup=None, source=None,
+                    simulate=False, overwrite=False):
+    """ writes the nfo file for a movie """
+    if not overwrite and os.path.exists(dst):
+        return
     # get the metadata
     general = collections.OrderedDict()
     general['title'] = movie['title']
     general['originaltitle'] = movie['original_title']
     if movie['belongs_to_collection']:
         general['set'] = movie['belongs_to_collection']['name']
-    general['year'] = movie['release_date'] # maybe we only want a year
+    general['year'] = movie['release_date']  # maybe we only want a year
 
     general['runtime'] = str(movie['runtime'])
     general['mpaa'] = "Not available"
@@ -138,8 +156,10 @@ def write_movie_nfo(movie, releasegroup, source, nfo_destination, language, simu
     general['plot'] = movie['overview']
     general['rating'] = str(movie['vote_average'])
     general['votes'] = str(movie['vote_count'])
-    if releasegroup: general['releasegroup'] = releasegroup
-    if source: general['source'] = source
+    if releasegroup:
+        general['releasegroup'] = releasegroup
+    if source:
+        general['source'] = source
     general['tmdb_id'] = movie['id']
 
     studios = []
@@ -153,8 +173,10 @@ def write_movie_nfo(movie, releasegroup, source, nfo_destination, language, simu
     directors = []
     writers = []
     for crew in movie['credits']['crew']:
-        if crew['job'] == 'Director': directors.append(crew['name'])
-        if crew['job'] == 'Writer': writers.append(crew['name'])
+        if crew['job'] == 'Director':
+            directors.append(crew['name'])
+        if crew['job'] == 'Writer':
+            writers.append(crew['name'])
 
     genres = get_genres(movie)
     actors = get_actors(movie)
@@ -180,4 +202,4 @@ def write_movie_nfo(movie, releasegroup, source, nfo_destination, language, simu
                 "\t</actor>\n").format(actor['name'], actor['role'])
     nfo += "</movie>"
 
-    write_nfo(nfo, nfo_destination, simulate)
+    write_nfo(nfo, dst, simulate)

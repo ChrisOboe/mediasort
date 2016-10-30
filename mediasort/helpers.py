@@ -14,33 +14,47 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+""" helper functinos for mediasort """
+
 from urllib.request import urlretrieve
 import logging
 import os
 
-downloaded = []
+DOWNLOADED = []
+
 
 def replace_by_rule(rules, string):
+    """ replaces multiple stuff from a dict """
     for rule in rules:
         string = string.replace(rule, rules[rule])
     return string
 
-def download(src, dst, simulate, overwrite):
-    if dst in downloaded: return
-    if not overwrite and os.path.exists(dst): return
 
-    logging.info("  Downloading\n    from: {0}\n    to:   {1}".format(src, dst))
-    downloaded.append(dst)
+def download(src, dst, simulate=False, overwrite=False):
+    """ Downloads something """
+    if dst in DOWNLOADED:
+        return
+    if not overwrite and os.path.exists(dst):
+        return
+
+    logging.info("  Downloading\n    from: {0}\n    to:   {1}"
+                 .format(src, dst))
+    DOWNLOADED.append(dst)
     if not simulate:
         create_path(dst)
         urlretrieve(src, dst)
 
+
 def create_path(path):
+    """ Creats a path if it not exists """
     dirname = os.path.dirname(path)
+    logging.info("  Creating path {0}".format(dirname))
     if not os.path.exists(dirname):
         os.makedirs(dirname)
 
+
 def filter_fs_chars(string):
+    """ Replaces problematic chars from a string with a underline """
     forbidden_chars = ['/', '\\', '<', '>', ':', '"', '|', '?', '*']
     for char in forbidden_chars:
         string = string.replace(char, "_")

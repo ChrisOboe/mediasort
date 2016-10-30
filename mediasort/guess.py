@@ -14,12 +14,16 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from guessit import guessit
+""" helpers for guessit """
+
 import os
 import logging
-import tmdb
+from guessit import guessit
+from . import tmdb
+
 
 def parse_nfo(nfofile):
+    """ parses an nfo """
     import xml.etree.ElementTree
     try:
         xml = xml.etree.ElementTree.parse(nfofile)
@@ -39,13 +43,14 @@ def parse_nfo(nfofile):
     wanted = ["releasegroup", "source", "tmdb_id", "episode", "season"]
     for i in wanted:
         entry = root.find(i)
-        if entry != None:
+        if entry is not None:
             nfo[i] = entry.text
 
     return nfo
 
 
 def guess_vid(filename, nfofile, forced_type):
+    """ guess based on nfo. if not found based on filename """
     guess = {}
     complete = False
     if os.path.exists(nfofile):
@@ -124,6 +129,11 @@ def guess_vid(filename, nfofile, forced_type):
                 title = guess_filename["title"]
 
             guess["tmdb_id"] = tmdb.get_id(guess["type"], title, year)
+
+    if "releasegroup" not in guess:
+        guess['releasegroup'] = None
+    if "source" not in guess:
+        guess['source'] = None
 
     if guess["tmdb_id"] == None: raise LookupError("No TMDb entry found")
     if guess["type"] == "episode":
