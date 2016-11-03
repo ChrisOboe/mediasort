@@ -1,7 +1,17 @@
 # MediaSort Readme
-Autosort is a tool which can automaticly sort movies and episodes from scene releases.
-It's written in python and uses the guessit library for guessing informations based on filename / foldername.
-It then uses this informations to scrape the metadata from TMDb by using the tmdbsimple library.
+MediaSort is a tool which sorts and downloads metadata for movies and episodes
+based on their filename in a fully automated way.
+
+It's written in python and uses the guessit library for guessing informations
+based on filename / foldername.
+It then uses this informations to scrape the metadata from TMDb by using the
+tmdbsimple library.
+
+This tool heavily depends on [TMDb](https://www.themoviedb.org/) for getting
+informations and [fanart.tv](https://fanart.tv/) for getting images.
+So please consider supporting these projects by contributing or donations.
+
+This product uses the TMDb API but is not endorsed or certified by TMDb.
 
 ## Usage
 ```
