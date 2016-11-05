@@ -52,7 +52,9 @@ def write_nfo(nfo, destination, simulate):
             nfofile.write(nfo)
 
 
-def write_series_nfo(series, language, dst, simulate=False, overwrite=False):
+def write_tvshow_nfo(series, rating_country, dst,
+                     simulate=False, overwrite=False):
+    """ writes the nfo of a tvshow """
     if (not overwrite and os.path.exists(dst)) or \
        (dst in SERIES_WRITTEN):
         return
@@ -66,7 +68,7 @@ def write_series_nfo(series, language, dst, simulate=False, overwrite=False):
     general['runtime'] = str(series['episode_run_time'][0])
     general['mpaa'] = "Not available"
     for rating in series['content_ratings']['results']:
-        if rating['iso_3166_1'] == language:
+        if rating['iso_3166_1'] == rating_country:
             general['mpaa'] = rating['rating']
     general['tmdb_id'] = series['id']
 
@@ -150,7 +152,7 @@ def write_episode_nfo(series, episode, dst, releasegroup=None, source=None,
     write_nfo(nfo, dst, simulate)
 
 
-def write_movie_nfo(movie, dst, language, releasegroup=None, source=None,
+def write_movie_nfo(movie, dst, rating_country, releasegroup=None, source=None,
                     simulate=False, overwrite=False):
     """ writes the nfo file for a movie """
     if not overwrite and os.path.exists(dst):
@@ -166,7 +168,7 @@ def write_movie_nfo(movie, dst, language, releasegroup=None, source=None,
     general['runtime'] = str(movie['runtime'])
     general['mpaa'] = "Not available"
     for release in movie['release_dates']['results']:
-        if release['iso_3166_1'] == language:
+        if release['iso_3166_1'] == rating_country:
             general['mpaa'] = str(release['release_dates'][0]['certification'])
 
     general['tagline'] = movie['tagline']

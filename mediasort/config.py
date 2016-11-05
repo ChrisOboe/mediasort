@@ -63,8 +63,7 @@ def parse_configfile(path):
             'simulate_nfo': False
             },
         'general': {
-            'language': 'EN-US',
-            'cache_path': xdg_cache_home+"/mediasort/",
+            'languages': 'en'.split(),
             'overwrite_nfos': True,
             'overwrite_images': True,
             'overwrite_videos': False
@@ -74,39 +73,66 @@ def parse_configfile(path):
             'minimal_file_size': 100,
             },
         'tmdb': {
-            'config_cache_days': 7,
+            'cachefile': xdg_cache_home+"/mediasort/tmdb.cache",
+            'cache_validity': 7,
             'api_key': 'bd65f46c799046c2d4286966d76c37c6',
             'https_download': False,
             'poster_size': 'w500',
             'backdrop_size': 'w1280',
             'still_size': 'w300'
             },
-        'movie': {
-            'movie':    base_path + '/movies/$t ($y)/$t ($y).$ext',
-            'nfo':      base_path + '/movies/$t ($y)/$t ($y).nfo',
-            'backdrop': base_path + '/movies/$t ($y)/fanart.jpg',
-            'poster':   base_path + '/movies/$t ($y)/poster.jpg',
+        'fanarttv': {
+            'api_key': '975772e71680c85fc2944ca0492c691f'
             },
-        'movie_set': {
-            'movie':    base_path + '/movies/$s/$t ($y)/$t ($y).$ext',
-            'nfo':      base_path + '/movies/$s/$t ($y)/$t ($y).nfo',
-            'backdrop': base_path + '/movies/$s/$t ($y)/fanart.jpg',
-            'poster':   base_path + '/movies/$s/$t ($y)/poster.jpg',
+        'movie': {
+            'base_path':       base_path + '/movies/$t ($y)/',
+            'base_path_set':   base_path + '/movies/$s/$t ($y)/',
+            'movie_path':      '$t ($y)',
+            'nfo_path':        '$t ($y)',
+            'logo_path':       'logo',
+            'disc_path':       'disc',
+            'poster_path':     'poster',
+            'clearart_path':   'clearart',
+            'background_path': 'fanart',
+            'banner_path':     'banner',
+            'art_path':        'art',
+            'logo_providers':       'fanarttv'.split(),
+            'disc_providers':       'fanarttv'.split(),
+            'poster_providers':     'fanarttv tmdb'.split(),
+            'clearart_providers':   'fanarttv'.split(),
+            'background_providers': 'fanarttv tmdb'.split(),
+            'banner_providers':     'fanarttv'.split(),
+            'art_providers':        'fanarttv'.split(),
             },
         'tvshow': {
-            'nfo':      base_path + '/tvshows/$st ($y)/tvshow.nfo',
-            'poster':   base_path + '/tvshows/$st ($y)/poster.jpg',
-            'backdrop': base_path + '/tvshows/$st ($y)/fanart.jpg',
-            'season_poster':   (base_path + '/tvshows/$st ($y)'
-                                + '/season$sn-poster.jpg'),
+            'base_path':       base_path + '/tvshows/$st ($y)/',
+            'nfo_path':        'tvshow',
+            'logo_path':       'logo',
+            'poster_path':     'poster',
+            'charart_path':    'charart',
+            'clearart_path':   'clearart',
+            'background_path': 'background',
+            'banner_path':     'banner',
+            'art_path':        'art',
+            'logo_providers':       'fanarttv'.split(),
+            'poster_providers':     'fanarttv tmdb'.split(),
+            'charart_providers':    'fanarttv'.split(),
+            'clearart_providers':   'fanarttv'.split(),
+            'background_providers': 'fanarttv tmdb'.split(),
+            'banner_providers':     'fanarttv'.split(),
+            'art_providers':        'fanarttv'.split(),
+            },
+        'season': {
+            'poster_path': 'season$sn-poster',
+            'banner_path': 'season$sn-banner',
+            'poster_providers': 'fanarttv tmdb'.split(),
+            'banner_providers': 'fanarttv'.split(),
             },
         'episode': {
-            'episode': (base_path + '/tvshows/$st ($y)/Season $sn'
-                        + '/S$snE$en $et.$ext'),
-            'nfo':     (base_path + '/tvshows/$st ($y)/Season $sn'
-                        + '/S$snE$en $et.nfo'),
-            'still':   (base_path + '/tvshows/$st ($y)/Season $sn'
-                        + '/S$snE$en $et-thumb.jpg'),
+            'episode_path':    'Season $sn/S$snE$en $et',
+            'nfo_path':        'Season $sn/S$snE$en $et',
+            'thumb_path':      'Season $sn/S$snE$en $et-thumb',
+            'thumb_providers': 'tmdb'.split(),
             }
     }
 

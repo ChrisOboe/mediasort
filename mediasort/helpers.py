@@ -23,6 +23,19 @@ import os
 DOWNLOADED = []
 
 
+def merge_dict(base_dict, overwrite_dict):
+    """ merges two dicts """
+    for key in overwrite_dict:
+        if key not in base_dict:
+            base_dict[key] = overwrite_dict[key]
+        else:
+            if isinstance(overwrite_dict[key], str) and \
+               base_dict[key] == '':
+                base_dict[key] = overwrite_dict[key]
+            elif isinstance(overwrite_dict[key], dict):
+                merge_dict(base_dict[key], overwrite_dict[key])
+
+
 def replace_by_rule(rules, string):
     """ replaces multiple stuff from a dict """
     for rule in rules:

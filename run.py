@@ -18,7 +18,6 @@
 """ the executable for mediasort """
 
 import sys
-import os
 import logging
 import mediasort
 
@@ -27,7 +26,7 @@ def verbose():
     """ logs info to stdout """
     log = logging.getLogger()
     log.setLevel(logging.INFO)
-    log.handlers=[]
+    log.handlers = []
     logout = logging.StreamHandler(sys.stdout)
     logout.setLevel(logging.INFO)
     log.addHandler(logout)
@@ -37,21 +36,8 @@ def verbose():
 ARGS = mediasort.config.parse_arguments()
 CONFIG = mediasort.config.parse_configfile(ARGS['config'])
 
-mediasort.tmdb.set_api_key(CONFIG['tmdb']['api_key'])
-TMDB_CONFIG = mediasort.tmdb.get_config(
-    os.path.expanduser(CONFIG['general']['cache_path'])+'tmdb.cache',
-    CONFIG['tmdb']['config_cache_days'])
-
-if CONFIG['tmdb']['https_download']:
-    CONFIG['tmdb']['base_url'] = TMDB_CONFIG['images']['secure_base_url']
-else:
-    CONFIG['tmdb']['base_url'] = TMDB_CONFIG['images']['base_url']
-
-try:
-    mediasort.config.validate(CONFIG, TMDB_CONFIG['images'])
-except AttributeError as err:
-    print(err)
-    sys.exit(1)
+mediasort.tmdb.init(CONFIG['tmdb'])
+mediasort.fanart.init(CONFIG['fanarttv'])
 
 # init stuff
 logging.getLogger("requests").setLevel(logging.WARNING)

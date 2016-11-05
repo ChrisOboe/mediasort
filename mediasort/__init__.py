@@ -14,7 +14,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+""" sorts a videofile """
+
 import os
+from enum import Enum
 import dateutil
 
 from .guess import guess_vid
@@ -22,13 +25,52 @@ from . import helpers
 from . import fs
 from . import nfo
 from . import tmdb
+from . import fanarttv
 from . import config
 
-# were caching tvshow entries to prevent redownloading the same again and again
-TVSHOWS = {}
+
+class MediaType(Enum):
+    """ enum for mediatypes """
+    movie = 1
+    tvshow = 2
+    season = 3
+    episode = 4
+    artist = 5
+    album = 6
 
 
-def sort(videofile, config, force=None):
+MOVIE_IMAGE_PROVIDERS = {
+    'tmdb': tmdb.get_movie_image_url,
+    'fanarttv': fanarttv.get_movie_image_url,
+    }
+TVSHOW_IMAGE_PROVIDERS = {
+    'tmdb': tmdb.get_tvshow_image_url,
+    'fanarttv': fanarttv.get_tvshow_image_url,
+    }
+SEASON_IMAGE_PROVIDERS = {
+    'tmdb': tmdb.get_season_image_url,
+    }
+EPISODE_IMAGE_PROVIDERS = {
+    'tmdb': tmdb.get_episode_image_url,
+    }
+
+
+def get_movie_image_url(tmdb_id, image_type, media_type, languages, providers):
+    """ returns a specific image for a movie """
+    for provider in providers:
+        if media_type == MediaType.movie:
+            url = MOVIE_IMAGE_PROVIDERS[provider](tmdb_id, image_type, languages)
+        elif media_type == MediaType.tvshow:
+            url = TVSHOW_IMAGE_PROVIDERS[provider](tmdb_id, image_type, languages)
+        elif media_type == MediaType.season:
+            url = SEASON_IMAGE_PROVIDERS[provider](tmdb_id, image_type, languages)
+        elif media_type == MediaType.episode:
+            url = EPISODE_IMAGE_PROVIDERS[provider](tmdb_id, image_type, languages)
+        if url is not None:
+            return url
+
+
+def sort(videofile, settings, force=None):
     """ sorts a videofile """
     videofile_basename = os.path.basename(videofile)
     videofile_abspath = os.path.abspath(videofile)
@@ -49,60 +91,51 @@ def sort(videofile, config, force=None):
 
     if guess['type'] == 'movie':
         movie = tmdb.get_movie_info(guess["tmdb_id"],
-                                    config['general']['language'])
+                                    settings['general']['languages'])
 
         replacers = {
             '$t': helpers.filter_fs_chars(movie['title']),
             '$ot': helpers.filter_fs_chars(movie['original_title']),
             '$y': str(dateutil.parser.parse(movie['release_date']).year),
-            '$ext': videofile_extension
         }
 
-        dst = helpers.replace_by_rule(replacers, config['movie']['movie'])
-        if os.path.exists(dst) and config['general']['overwrite_videos']:
+        dst = helpers.replace_by_rule(replacers, settings['movie']['movie'])
+        if os.path.exists(dst) and settings['general']['overwrite_videos']:
             return
 
         downloads = {
-            config['tmdb']['base_url']
-            + config['tmdb']['backdrop_size']
+            get_movie_image_url(guess['tmdb_id'], 'backdrop'
+            settings['tmdb']['base_url']
+            + settings['tmdb']['backdrop_size']
             + movie['backdrop_path']:
-            helpers.replace_by_rule(replacers, config['movie']['backdrop']),
+            helpers.replace_by_rule(replacers, settings['movie']['backdrop']),
 
-            config['tmdb']['base_url']
-            + config['tmdb']['poster_size']
+            settings['tmdb']['base_url']
+            + settings['tmdb']['poster_size']
             + movie['poster_path']:
-            helpers.replace_by_rule(replacers, config['movie']['poster']),
+            helpers.replace_by_rule(replacers, settings['movie']['poster']),
         }
 
         # write nfo
         nfo.write_movie_nfo(
             movie=movie,
-            dst=helpers.replace_by_rule(replacers, config['movie']['nfo']),
-            language=config['general']['language'],
+            dst=helpers.replace_by_rule(replacers, settings['movie']['nfo']),
+            rating_country=settings['general']['languages'][0],
             releasegroup=guess['releasegroup'],
             source=guess['source'],
-            simulate=config['debug']['simulate_nfo'],
-            overwrite=config['general']['overwrite_nfos']
+            simulate=settings['debug']['simulate_nfo'],
+            overwrite=settings['general']['overwrite_nfos']
         )
 
     elif guess['type'] == 'episode':
-        if not guess["tmdb_id"] in TVSHOWS:
-            TVSHOWS[guess["tmdb_id"]] = tmdb.get_tvshow_info(
-                guess["tmdb_id"],
-                config['general']['language']
-                )
-
-        tvshow = TVSHOWS[guess['tmdb_id']]
+        tvshow = tmdb.get_tvshow_info(
+            guess["tmdb_id"],
+            settings['general']['languages'])
 
         episode = tmdb.get_episode_info(guess['tmdb_id'],
                                         guess['season'],
                                         guess['episode'],
-                                        config['general']['language'])
-
-        season = None
-        for tmp_season in tvshow['seasons']:
-            if tmp_season['season_number'] == episode['season_number']:
-                season = tmp_season
+                                        settings['general']['languages'])
 
         replacers = {
             '$st': helpers.filter_fs_chars(tvshow['name']),
@@ -114,50 +147,50 @@ def sort(videofile, config, force=None):
             '$ext': videofile_extension
         }
 
-        dst = helpers.replace_by_rule(replacers, config['episode']['episode'])
-        if os.path.exists(dst) and config['general']['overwrite_videos']:
+        dst = helpers.replace_by_rule(replacers, settings['episode']['episode'])
+        if os.path.exists(dst) and settings['general']['overwrite_videos']:
             return
 
         downloads = {
-            config['tmdb']['base_url']
-            + config['tmdb']['backdrop_size']
+            settings['tmdb']['base_url']
+            + settings['tmdb']['backdrop_size']
             + tvshow['backdrop_path']:
-            helpers.replace_by_rule(replacers, config['tvshow']['backdrop']),
+            helpers.replace_by_rule(replacers, settings['tvshow']['backdrop']),
 
-            config['tmdb']['base_url']
-            + config['tmdb']['poster_size']
+            settings['tmdb']['base_url']
+            + settings['tmdb']['poster_size']
             + tvshow['poster_path']:
-            helpers.replace_by_rule(replacers, config['tvshow']['poster']),
+            helpers.replace_by_rule(replacers, settings['tvshow']['poster']),
 
-            config['tmdb']['base_url']
-            + config['tmdb']['poster_size']
+            settings['tmdb']['base_url']
+            + settings['tmdb']['poster_size']
             + season['poster_path']:
             helpers.replace_by_rule(replacers,
-                                    config['tvshow']['season_poster']),
+                                    settings['tvshow']['season_poster']),
 
-            config['tmdb']['base_url']
-            + config['tmdb']['still_size']
+            settings['tmdb']['base_url']
+            + settings['tmdb']['still_size']
             + episode['still_path']:
-            helpers.replace_by_rule(replacers, config['episode']['still']),
+            helpers.replace_by_rule(replacers, settings['episode']['still']),
         }
 
         # write series nfo
         nfo.write_series_nfo(
             tvshow,
-            config['general']['language'],
-            helpers.replace_by_rule(replacers, config['tvshow']['nfo']),
-            simulate=config['debug']['simulate_nfo'],
-            overwrite=config['general']['overwrite_nfos'])
+            settings['general']['language'],
+            helpers.replace_by_rule(replacers, settings['tvshow']['nfo']),
+            simulate=settings['debug']['simulate_nfo'],
+            overwrite=settings['general']['overwrite_nfos'])
 
         # write episode nfo
         nfo.write_episode_nfo(
             tvshow,
             episode,
-            helpers.replace_by_rule(replacers, config['episode']['nfo']),
+            helpers.replace_by_rule(replacers, settings['episode']['nfo']),
             releasegroup=guess['releasegroup'],
             source=guess['source'],
-            simulate=config['debug']['simulate_nfo'],
-            overwrite=config['general']['overwrite_nfos'])
+            simulate=settings['debug']['simulate_nfo'],
+            overwrite=settings['general']['overwrite_nfos'])
 
     else:
         return
@@ -165,12 +198,12 @@ def sort(videofile, config, force=None):
     # move file
     fs.move(videofile_abspath,
             dst,
-            config['debug']['simulate_move'],
-            config['general']['overwrite_videos'])
+            settings['debug']['simulate_move'],
+            settings['general']['overwrite_videos'])
 
     # download images
     for download in downloads:
         helpers.download(src=download,
                          dst=downloads[download],
-                         simulate=config['debug']['simulate_images'],
-                         overwrite=config['general']['overwrite_images'])
+                         simulate=settings['debug']['simulate_images'],
+                         overwrite=settings['general']['overwrite_images'])
