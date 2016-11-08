@@ -126,13 +126,13 @@ def parse_configfile(path):
             'poster_path': 'season$sn-poster',
             'banner_path': 'season$sn-banner',
             'poster_providers': 'fanarttv tmdb'.split(),
-            'banner_providers': 'fanarttv'.split(),
+            'banner_providers': 'None'.split(),
             },
         'episode': {
             'episode_path':    'Season $sn/S$snE$en $et',
             'nfo_path':        'Season $sn/S$snE$en $et',
-            'thumb_path':      'Season $sn/S$snE$en $et-thumb',
-            'thumb_providers': 'tmdb'.split(),
+            'thumbnail_path':      'Season $sn/S$snE$en $et-thumb',
+            'thumbnail_providers': 'tmdb'.split(),
             }
     }
 

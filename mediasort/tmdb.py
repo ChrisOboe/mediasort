@@ -49,7 +49,7 @@ def download_config(cachefile):
     """ downloads and caches the tmdb config """
     logging.info("Downloading TMDb config")
     tmdb_config = tmdbsimple.Configuration().info()
-    tmdb_config['lastaccess'] = datetime.datetime.now().strftime('%Y-%m-%d %H:%M')
+    tmdb_config['lastaccess'] = datetime.datetime.now().strftime('%Y-%m-%d')
     helpers.create_path(cachefile)
     with open(cachefile, 'w') as cache:
         json.dump(tmdb_config, cache)
@@ -73,7 +73,7 @@ def init(settings):
     lastaccess = dateutil.parser.parse(tmdb_config['lastaccess'])
     if (datetime.datetime.now() - lastaccess).days > settings['cache_validity']:
         logging.info("Cachefile exists, but is too old")
-        config = download_config(cachefile)
+        config = download_config(settings['cachefile'])
     else:
         logging.info("Using config from cache")
         config = tmdb_config
@@ -99,7 +99,7 @@ def init(settings):
                                  config['images'][checks[check]]))
             raise AttributeError(errortext)
         else:
-            SIZE[check] = config['images'][checks[check]]
+            SIZE[check] = settings[check]
 
 
 def get_id(video_type, title, year):
@@ -171,6 +171,8 @@ def get_episode_info(tmdb_id, season, episode, languages):
        episode in EPISODE_CACHE[tmdb_id][season]:
         return EPISODE_CACHE[tmdb_id][season][episode]
 
+    EPISODE_CACHE[tmdb_id] = {}
+    EPISODE_CACHE[tmdb_id][season] = {}
     EPISODE_CACHE[tmdb_id][season][episode] = {}
     for language in languages:
         helpers.merge_dict(EPISODE_CACHE[tmdb_id][season][episode],
@@ -198,14 +200,19 @@ def get_movie_image_url(tmdb_id, image_type, languages):
 
 def get_tvshow_image_url(tmdb_id, image_type, languages):
     """ returns the url of a tvshow image """
+
     if image_type == 'poster':
         return (BASE_URL
                 + SIZE['poster_size']
-                + get_tvshow_info(tmdb_id, languages)['images']['poster'][0]['path'])
-    elif image_type == 'backdrop':
+                + get_tvshow_info(
+                    tmdb_id,
+                    languages)['images']['posters'][0]['file_path'])
+    elif image_type == 'background':
         return (BASE_URL
                 + SIZE['backdrop_size']
-                + get_tvshow_info(tmdb_id, languages)['images']['backdrop'][0]['path'])
+                + get_tvshow_info(
+                    tmdb_id,
+                    languages)['images']['backdrops'][0]['file_path'])
     else:
         raise LookupError("TMDb doesn't support {0}".format(image_type))
 

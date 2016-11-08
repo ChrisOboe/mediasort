@@ -43,8 +43,11 @@ def get_genres(tmdb):
     return genres
 
 
-def write_nfo(nfo, destination, simulate):
+def write_nfo(nfo, destination, simulate, append_ext=True):
     """ helper for writing the nfo file """
+    if append_ext:
+        destination += ".nfo"
+
     logging.info("  Writing \"{0}\"".format(destination))
     if not simulate:
         create_path(destination)

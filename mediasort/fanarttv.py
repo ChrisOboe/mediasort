@@ -16,44 +16,10 @@
 
 """ provides an interface for fanart.tv """
 
-from urllib.request import urlopen
+import urllib
 import json
 
 FANARTTV_BASE_URL = "http://webservice.fanart.tv/v3"
-
-
-# MOVIE IMAGES
-# |MediaSort name|fanart.tv name|fanart.tv api  |description                  |
-# |--------------|--------------|---------------|-----------------------------|
-# |logo          |HD ClearLOGO  |hdmovielogo    |logo with transparent bg     |
-# |logo          |ClearLOGO     |movielogo      |fallback for logo            |
-# |disc          |cdART         |moviedisc      |disc with transparent bg     |
-# |poster        |Poster        |movieposter    |poster without tagline       |
-# |clearart      |HD ClearART   |hdmovieclearart|logo + chars + transparent bg|
-# |clearart      |ClearART      |movieart       |fallback for clearart        |
-# |background    |Background    |moviebackground|fullhd image without text    |
-# |banner        |Banner        |moviebanner    |old xbox scene style banner  |
-# |art           |Movie Thumbs  |moviethumb     |like clearart but with bg    |
-
-# TVSHOW IMAGES
-# |MediaSort name|fanart.tv name|fanart.tv api  |description                  |
-# |--------------|--------------|---------------|-----------------------------|
-# |logo          |HD ClearLOGO  |hdtvlogo       |logo with transparent bg     |
-# |logo          |ClearLOGO     |tvlogo         |fallback for logo            |
-# |poster        |Poster        |tvposter       |poster without tagline       |
-# |charart       |CharacterArt  |characterart   |characters + transparent bg  |
-# |clearart      |HD ClearART   |hdclearart     |logo + chars + transparent bg|
-# |clearart      |ClearART      |clearart       |fallback for clearart        |
-# |background    |Background    |showbackground |fullhd image without text    |
-# |banner        |Banner        |tvbanner       |old xbox scene style banner  |
-# |art           |Movie Thumbs  |tvthumb        |like clearart but with bg    |
-
-# SEASON IMAGES
-# Since fanart.tv doesn't have an api for selecting a sepcific season, we can't
-# use their season specific images
-
-# EPISODE IMAGES
-# fanart.tv doesn't have tumbnails for episodes.
 
 MOVIE_IMAGE_TYPES = {'logo':       ['hdmovielogo', 'movielogo'],
                      'disc':       ['moviedisc'],
@@ -106,11 +72,20 @@ def get_images(tmdb_id, category):
     if tmdb_id in IMAGE_CACHE:
         return IMAGE_CACHE[tmdb_id]
 
-    with urlopen(FANARTTV_BASE_URL + "/" + category + "/"
-                 + tmdb_id + "?api_key=" + API_KEY) as response:
+    request = urllib.request.Request(
+        FANARTTV_BASE_URL + "/"
+        + category + "/"
+        + str(tmdb_id)
+        + "?api_key=" + API_KEY)
 
-        IMAGE_CACHE[tmdb_id] = json.loads(response.read())
-        return IMAGE_CACHE[tmdb_id]
+    try:
+        response = urllib.request.urlopen(request)
+        IMAGE_CACHE[tmdb_id] = json.loads(
+            response.read().decode(response.headers.get_content_charset()))
+    except urllib.error.HTTPError:
+        IMAGE_CACHE[tmdb_id] = None
+
+    return IMAGE_CACHE[tmdb_id]
 
 
 def get_movie_image_url(tmdb_id, image_type, languages):
@@ -120,9 +95,8 @@ def get_movie_image_url(tmdb_id, image_type, languages):
                           .format(image_type))
 
     for language in languages:
-        for images in get_images(tmdb_id,
-                                 'movies')[MOVIE_IMAGE_TYPES[image_type]]:
-            for image in images:
+        for images in MOVIE_IMAGE_TYPES[image_type]:
+            for image in get_images(tmdb_id, 'movies')[images]:
                 if image['lang'] == language:
                     return image['url']
 
@@ -136,9 +110,11 @@ def get_tvshow_image_url(tmdb_id, image_type, languages):
         raise LookupError("fanart.tv doesn't support {0}"
                           .format(image_type))
 
+    if get_images(tmdb_id, 'tv') is None:
+        raise LookupError("fanart.tv doesn't support this tvshow")
+
     for language in languages:
-        for images in get_images(tmdb_id,
-                                 'tv')[MOVIE_IMAGE_TYPES[image_type]]:
+        for images in get_images(tmdb_id, 'tv')[MOVIE_IMAGE_TYPES[image_type]]:
             for image in images:
                 if image['lang'] == language:
                     return image['url']

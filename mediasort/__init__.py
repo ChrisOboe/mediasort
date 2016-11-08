@@ -17,26 +17,15 @@
 """ sorts a videofile """
 
 import os
-from enum import Enum
+import logging
 import dateutil
 
 from .guess import guess_vid
 from . import helpers
-from . import fs
 from . import nfo
 from . import tmdb
 from . import fanarttv
 from . import config
-
-
-class MediaType(Enum):
-    """ enum for mediatypes """
-    movie = 1
-    tvshow = 2
-    season = 3
-    episode = 4
-    artist = 5
-    album = 6
 
 
 MOVIE_IMAGE_PROVIDERS = {
@@ -55,20 +44,40 @@ EPISODE_IMAGE_PROVIDERS = {
     }
 
 
-def get_movie_image_url(tmdb_id, image_type, media_type, languages, providers):
-    """ returns a specific image for a movie """
+def get_image_url(tmdb_id, image_type, media_type, languages, providers,
+                  episode=0, season=0):
+    """ returns a specific image for a specific media """
+
+    url = None
     for provider in providers:
-        if media_type == MediaType.movie:
-            url = MOVIE_IMAGE_PROVIDERS[provider](tmdb_id, image_type, languages)
-        elif media_type == MediaType.tvshow:
-            url = TVSHOW_IMAGE_PROVIDERS[provider](tmdb_id, image_type, languages)
-        elif media_type == MediaType.season:
-            url = SEASON_IMAGE_PROVIDERS[provider](tmdb_id, image_type, languages)
-        elif media_type == MediaType.episode:
-            url = EPISODE_IMAGE_PROVIDERS[provider](tmdb_id, image_type, languages)
+        try:
+            if media_type == "movie":
+                url = MOVIE_IMAGE_PROVIDERS[provider](tmdb_id,
+                                                      image_type,
+                                                      languages)
+            elif media_type == "tvshow":
+                url = TVSHOW_IMAGE_PROVIDERS[provider](tmdb_id,
+                                                       image_type,
+                                                       languages)
+            elif media_type == "season":
+                url = SEASON_IMAGE_PROVIDERS[provider](tmdb_id,
+                                                       season,
+                                                       image_type,
+                                                       languages)
+            elif media_type == "episode":
+                url = EPISODE_IMAGE_PROVIDERS[provider](tmdb_id,
+                                                        season,
+                                                        episode,
+                                                        image_type,
+                                                        languages)
+        except LookupError as err:
+            logging.info("  Skipping {0} for this {1}, since {2}".format(provider,
+                                                                         image_type,
+                                                                         err))
         if url is not None:
             return url
 
+    print("Sorry we didn't found a {0} for this media file".format(image_type))
 
 def sort(videofile, settings, force=None):
     """ sorts a videofile """
@@ -78,7 +87,7 @@ def sort(videofile, settings, force=None):
     nfofile = os.path.splitext(videofile_abspath)[0]+".nfo"
 
     dst = None
-    downloads = {}
+    downloads = []
 
     print("\nProcessing \"{0}\"".format(videofile_abspath))
 
@@ -90,36 +99,56 @@ def sort(videofile, settings, force=None):
         return
 
     if guess['type'] == 'movie':
+        # Get tmdb_id
         movie = tmdb.get_movie_info(guess["tmdb_id"],
                                     settings['general']['languages'])
 
+        # set replacement rules
         replacers = {
             '$t': helpers.filter_fs_chars(movie['title']),
             '$ot': helpers.filter_fs_chars(movie['original_title']),
             '$y': str(dateutil.parser.parse(movie['release_date']).year),
         }
 
-        dst = helpers.replace_by_rule(replacers, settings['movie']['movie'])
+        # check if movie destination already exists
+        dst = helpers.replace_by_rule(replacers,
+                                      settings['movie']['base_path']
+                                      + settings['movie']['movie_path'])
         if os.path.exists(dst) and settings['general']['overwrite_videos']:
             return
 
-        downloads = {
-            get_movie_image_url(guess['tmdb_id'], 'backdrop'
-            settings['tmdb']['base_url']
-            + settings['tmdb']['backdrop_size']
-            + movie['backdrop_path']:
-            helpers.replace_by_rule(replacers, settings['movie']['backdrop']),
-
-            settings['tmdb']['base_url']
-            + settings['tmdb']['poster_size']
-            + movie['poster_path']:
-            helpers.replace_by_rule(replacers, settings['movie']['poster']),
-        }
+        # set image downloads
+        downloads = [
+            {"mediatype": "movie",
+             "tmdb_id":   guess['tmdb_id'],
+             "images": [
+                 {"imagetype":   "poster",
+                  "providers":   settings['movie']['poster_providers'],
+                  "destination": settings['movie']['poster_path']},
+                 {"imagetype":   "background",
+                  "providers":   settings['movie']['background_providers'],
+                  "destination": settings['movie']['background_path']},
+                 {"imagetype":   "disc",
+                  "providers":   settings['movie']['disc_providers'],
+                  "destination": settings['movie']['disc_path']},
+                 {"imagetype":   "banner",
+                  "providers":   settings['movie']['banner_providers'],
+                  "destination": settings['movie']['banner_path']},
+                 {"imagetype":   "logo",
+                  "providers":   settings['movie']['logo_providers'],
+                  "destination": settings['movie']['logo_path']},
+                 {"imagetype":   "clearart",
+                  "providers":   settings['movie']['clearart_providers'],
+                  "destination": settings['movie']['clearart_path']},
+                 {"imagetype":   "art",
+                  "providers":   settings['movie']['art_providers'],
+                  "destination": settings['movie']['art_path']}]}
+        ]
 
         # write nfo
         nfo.write_movie_nfo(
             movie=movie,
-            dst=helpers.replace_by_rule(replacers, settings['movie']['nfo']),
+            dst=helpers.replace_by_rule(replacers, settings['movie']['nfo_path']),
             rating_country=settings['general']['languages'][0],
             releasegroup=guess['releasegroup'],
             source=guess['source'],
@@ -147,38 +176,61 @@ def sort(videofile, settings, force=None):
             '$ext': videofile_extension
         }
 
-        dst = helpers.replace_by_rule(replacers, settings['episode']['episode'])
+        dst = (settings['tvshow']['base_path']
+               + helpers.replace_by_rule(replacers,
+                                         settings['episode']['episode_path']))
         if os.path.exists(dst) and settings['general']['overwrite_videos']:
             return
 
-        downloads = {
-            settings['tmdb']['base_url']
-            + settings['tmdb']['backdrop_size']
-            + tvshow['backdrop_path']:
-            helpers.replace_by_rule(replacers, settings['tvshow']['backdrop']),
-
-            settings['tmdb']['base_url']
-            + settings['tmdb']['poster_size']
-            + tvshow['poster_path']:
-            helpers.replace_by_rule(replacers, settings['tvshow']['poster']),
-
-            settings['tmdb']['base_url']
-            + settings['tmdb']['poster_size']
-            + season['poster_path']:
-            helpers.replace_by_rule(replacers,
-                                    settings['tvshow']['season_poster']),
-
-            settings['tmdb']['base_url']
-            + settings['tmdb']['still_size']
-            + episode['still_path']:
-            helpers.replace_by_rule(replacers, settings['episode']['still']),
-        }
+        downloads = [
+            {"mediatype": "tvshow",
+             "tmdb_id":   guess['tmdb_id'],
+             "images": [
+                 {"imagetype":   "poster",
+                  "providers":   settings['tvshow']['poster_providers'],
+                  "destination": settings['tvshow']['poster_path']},
+                 {"imagetype":   "background",
+                  "providers":   settings['tvshow']['background_providers'],
+                  "destination": settings['tvshow']['background_path']},
+                 {"imagetype":   "banner",
+                  "providers":   settings['tvshow']['banner_providers'],
+                  "destination": settings['tvshow']['banner_path']},
+                 {"imagetype":   "logo",
+                  "providers":   settings['tvshow']['logo_providers'],
+                  "destination": settings['tvshow']['logo_path']},
+                 {"imagetype":   "clearart",
+                  "providers":   settings['tvshow']['clearart_providers'],
+                  "destination": settings['tvshow']['clearart_path']},
+                 {"imagetype":   "charart",
+                  "providers":   settings['tvshow']['charart_providers'],
+                  "destination": settings['tvshow']['charart_path']},
+                 {"imagetype":   "art",
+                  "providers":   settings['movie']['art_providers'],
+                  "destination": settings['movie']['art_path']}]},
+            {"mediatype": "season",
+             "tmdb_id":   guess['tmdb_id'],
+             "season":    episode['season_number'],
+             "images": [
+                 {"imagetype":   "poster",
+                  "providers":   settings['season']['poster_providers'],
+                  "destination": settings['season']['poster_path']}]},
+            {"mediatype": "episode",
+             "tmdb_id":   guess['tmdb_id'],
+             "season":    episode['season_number'],
+             "episode":   episode['episode_number'],
+             "images": [
+                 {"imagetype":   "thumbnail",
+                  "providers":   settings['episode']['thumbnail_providers'],
+                  "destination": settings['episode']['thumbnail_path']}]},
+        ]
 
         # write series nfo
-        nfo.write_series_nfo(
+        nfo.write_tvshow_nfo(
             tvshow,
-            settings['general']['language'],
-            helpers.replace_by_rule(replacers, settings['tvshow']['nfo']),
+            settings['general']['languages'][0],
+            helpers.replace_by_rule(replacers,
+                                    settings['tvshow']['base_path']
+                                    + settings['tvshow']['nfo_path']),
             simulate=settings['debug']['simulate_nfo'],
             overwrite=settings['general']['overwrite_nfos'])
 
@@ -186,7 +238,9 @@ def sort(videofile, settings, force=None):
         nfo.write_episode_nfo(
             tvshow,
             episode,
-            helpers.replace_by_rule(replacers, settings['episode']['nfo']),
+            helpers.replace_by_rule(replacers,
+                                    settings['tvshow']['base_path']
+                                    + settings['episode']['nfo_path']),
             releasegroup=guess['releasegroup'],
             source=guess['source'],
             simulate=settings['debug']['simulate_nfo'],
@@ -195,15 +249,39 @@ def sort(videofile, settings, force=None):
     else:
         return
 
-    # move file
-    fs.move(videofile_abspath,
-            dst,
-            settings['debug']['simulate_move'],
-            settings['general']['overwrite_videos'])
-
     # download images
     for download in downloads:
-        helpers.download(src=download,
-                         dst=downloads[download],
-                         simulate=settings['debug']['simulate_images'],
-                         overwrite=settings['general']['overwrite_images'])
+        for image in download['images']:
+            # check if special provider "None" is used
+            if image["providers"][0] == "None":
+                continue
+
+            if download['mediatype'] == 'movie':
+                base_path = settings['movie']['base_path']
+            else:
+                base_path = settings['tvshow']['base_path']
+
+            url = get_image_url(
+                tmdb_id=download['tmdb_id'],
+                image_type=image['imagetype'],
+                media_type=download['mediatype'],
+                languages=settings['general']['languages'],
+                providers=image['providers'],
+                season=None if 'season' not in download else download['season'],
+                episode=None if 'episode' not in download else download['episode']
+            )
+
+            if url is not None:
+                helpers.download(
+                    src=url,
+                    dst=helpers.replace_by_rule(
+                        replacers,
+                        base_path + image['destination']),
+                    simulate=settings['debug']['simulate_images'],
+                    overwrite=settings['general']['overwrite_images'])
+
+    # move file
+    helpers.move(videofile_abspath,
+                 dst,
+                 settings['debug']['simulate_move'],
+                 settings['general']['overwrite_videos'])

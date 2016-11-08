@@ -37,7 +37,7 @@ ARGS = mediasort.config.parse_arguments()
 CONFIG = mediasort.config.parse_configfile(ARGS['config'])
 
 mediasort.tmdb.init(CONFIG['tmdb'])
-mediasort.fanart.init(CONFIG['fanarttv'])
+mediasort.fanarttv.init(CONFIG['fanarttv'])
 
 # init stuff
 logging.getLogger("requests").setLevel(logging.WARNING)
@@ -45,9 +45,9 @@ if ARGS['verbose']:
     verbose()
 
 # get list of files
-VIDEOFILES = mediasort.fs.find(ARGS['source'],
-                               CONFIG['videofiles']['allowed_extensions'],
-                               CONFIG['videofiles']['minimal_file_size'])
+VIDEOFILES = mediasort.helpers.find(ARGS['source'],
+                                    CONFIG['videofiles']['allowed_extensions'],
+                                    CONFIG['videofiles']['minimal_file_size'])
 
 for videofile in VIDEOFILES:
     mediasort.sort(videofile, CONFIG, ARGS['force_type'])

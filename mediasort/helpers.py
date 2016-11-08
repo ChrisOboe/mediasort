@@ -17,14 +17,15 @@
 """ helper functinos for mediasort """
 
 from urllib.request import urlretrieve
+from urllib.parse import urlparse
 import logging
 import os
+import shutil
 
 DOWNLOADED = []
 
 
 def merge_dict(base_dict, overwrite_dict):
-    """ merges two dicts """
     for key in overwrite_dict:
         if key not in base_dict:
             base_dict[key] = overwrite_dict[key]
@@ -43,8 +44,11 @@ def replace_by_rule(rules, string):
     return string
 
 
-def download(src, dst, simulate=False, overwrite=False):
+def download(src, dst, simulate=False, overwrite=False, append_ext=True):
     """ Downloads something """
+    if append_ext:
+        ext = os.path.splitext(urlparse(src).path)[1]
+        dst += ext
     if dst in DOWNLOADED:
         return
     if not overwrite and os.path.exists(dst):
@@ -72,3 +76,44 @@ def filter_fs_chars(string):
     for char in forbidden_chars:
         string = string.replace(char, "_")
     return string
+
+
+def move(src, dst, simulate=False, overwrite=False, append_ext=True):
+    """ moves a file from src to dst """
+    if append_ext:
+        ext = os.path.splitext(src)[1].lower()
+        dst += ext
+
+    if not overwrite and os.path.exists(dst):
+        raise FileExistsError("{0} already exists.".format(dst))
+
+    logging.info("  Moving\n    from: {0}\n    to:   {1}".format(src, dst))
+    if not simulate:
+        create_path(dst)
+        shutil.move(src, dst)
+
+
+def find(path, extensions, filesize):
+    """ returns all files with given extensions
+    and bigger than filesize in path """
+
+    filesize *= 1048576  # use filesize as MB
+    if not os.path.exists(path):
+        return
+
+    video_files = []
+    if os.path.isfile(path):
+        ext = os.path.splitext(path)[1].lower()[1:]
+        if ext in extensions and os.path.getsize(path) >= filesize:
+            video_files.append(path)
+    else:
+        for root, dirs, files in os.walk(path):
+            for filename in files:
+                filepath = os.path.join(root, filename)
+                ext = os.path.splitext(filename)[1].lower()[1:]
+                if (ext not in extensions) or \
+                   (os.path.getsize(filepath) < filesize):
+                    continue
+                video_files.append(filepath)
+
+    return video_files
