@@ -43,10 +43,6 @@ def parse_arguments():
         '--config',
         default="{0}/mediasort/config.ini".format(xdg_config_home),
         help="the config file")
-    parser.add_argument(
-        '-t',
-        '--force-type',
-        help="force either a episode or a movie")
 
     return vars(parser.parse_args())
 
@@ -125,7 +121,7 @@ def parse_configfile(path):
         'season': {
             'poster_path': 'season$sn-poster',
             'banner_path': 'season$sn-banner',
-            'poster_providers': 'fanarttv tmdb'.split(),
+            'poster_providers': 'tmdb'.split(),
             'banner_providers': 'None'.split(),
             },
         'episode': {

@@ -67,57 +67,70 @@ def get_episode_image_types():
     return None
 
 
-def get_images(tmdb_id, category):
+def get_images(mid, category):
     """ gets the answer from fanart.tv and caches it """
-    if tmdb_id in IMAGE_CACHE:
-        return IMAGE_CACHE[tmdb_id]
+
+    if mid in IMAGE_CACHE:
+        return IMAGE_CACHE[mid]
 
     request = urllib.request.Request(
         FANARTTV_BASE_URL + "/"
         + category + "/"
-        + str(tmdb_id)
+        + str(mid)
         + "?api_key=" + API_KEY)
+
+    print(FANARTTV_BASE_URL + "/"
+          + category + "/"
+          + str(mid)
+          + "?api_key=" + API_KEY)
 
     try:
         response = urllib.request.urlopen(request)
-        IMAGE_CACHE[tmdb_id] = json.loads(
+        IMAGE_CACHE[mid] = json.loads(
             response.read().decode(response.headers.get_content_charset()))
     except urllib.error.HTTPError:
-        IMAGE_CACHE[tmdb_id] = None
+        IMAGE_CACHE[mid] = None
 
-    return IMAGE_CACHE[tmdb_id]
+    return IMAGE_CACHE[mid]
 
 
-def get_movie_image_url(tmdb_id, image_type, languages):
+def get_movie_image_url(ids, image_type, languages):
     """ returns the url of an specified image """
     if image_type not in MOVIE_IMAGE_TYPES:
-        raise LookupError("This provider doesn't support {0}"
-                          .format(image_type))
+        return None
 
-    for language in languages:
-        for images in MOVIE_IMAGE_TYPES[image_type]:
-            for image in get_images(tmdb_id, 'movies')[images]:
+    # TODO enable a nolanguage config
+    # fanarttv specific for no language, we hardcode it as position 1
+    fa_languages = list(languages)
+    fa_languages.insert(1, "00")
+    for language in fa_languages:
+        for fa_image_type in MOVIE_IMAGE_TYPES[image_type]:
+            for image in get_images(ids["tmdb"], 'movies')[fa_image_type]:
                 if image['lang'] == language:
                     return image['url']
 
-    raise LookupError("No images for the languages {0} in type {1} found"
-                      .format(languages, image_type))
+    return None
 
-
-def get_tvshow_image_url(tmdb_id, image_type, languages):
+def get_tvshow_image_url(ids, image_type, languages):
     """ returns the url of an specified image """
     if image_type not in TVSHOW_IMAGE_TYPES:
         raise LookupError("fanart.tv doesn't support {0}"
                           .format(image_type))
 
-    if get_images(tmdb_id, 'tv') is None:
+    if get_images(ids["tvdb"], 'tv') is None:
         raise LookupError("fanart.tv doesn't support this tvshow")
 
-    for language in languages:
-        for images in get_images(tmdb_id, 'tv')[MOVIE_IMAGE_TYPES[image_type]]:
-            for image in images:
+    # TODO enable a nolanguage config
+    # fanarttv specific for no language, we hardcode it as position 1
+    fa_languages = list(languages)
+    fa_languages.insert(1, "00")
+    for language in fa_languages:
+        for fa_image_type in TVSHOW_IMAGE_TYPES[image_type]:
+            if fa_image_type not in get_images(ids["tvdb"], 'tv'):
+                continue
+            for image in get_images(ids["tvdb"], 'tv')[fa_image_type]:
                 if image['lang'] == language:
                     return image['url']
 
-    raise LookupError("No images for the languages {0} in type {1} found"
-                      .format(languages, image_type))
+    # raise LookupError("No images for the languages {0} in type {1} found"
+    #                  .format(languages, image_type))

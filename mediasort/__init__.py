@@ -25,8 +25,8 @@ from . import helpers
 from . import nfo
 from . import tmdb
 from . import fanarttv
+from .enums import MediaType
 from . import config
-
 
 MOVIE_IMAGE_PROVIDERS = {
     'tmdb': tmdb.get_movie_image_url,
@@ -44,42 +44,52 @@ EPISODE_IMAGE_PROVIDERS = {
     }
 
 
-def get_image_url(tmdb_id, image_type, media_type, languages, providers,
+def get_image_url(ids, image_type, media_type, languages, providers,
                   episode=0, season=0):
     """ returns a specific image for a specific media """
 
     url = None
     for provider in providers:
-        try:
-            if media_type == "movie":
-                url = MOVIE_IMAGE_PROVIDERS[provider](tmdb_id,
-                                                      image_type,
-                                                      languages)
-            elif media_type == "tvshow":
-                url = TVSHOW_IMAGE_PROVIDERS[provider](tmdb_id,
-                                                       image_type,
-                                                       languages)
-            elif media_type == "season":
-                url = SEASON_IMAGE_PROVIDERS[provider](tmdb_id,
-                                                       season,
-                                                       image_type,
-                                                       languages)
-            elif media_type == "episode":
-                url = EPISODE_IMAGE_PROVIDERS[provider](tmdb_id,
-                                                        season,
-                                                        episode,
-                                                        image_type,
-                                                        languages)
-        except LookupError as err:
-            logging.info("  Skipping {0} for this {1}, since {2}".format(provider,
-                                                                         image_type,
-                                                                         err))
+        if provider is None:
+            continue
+        if media_type == MediaType.movie:
+            if provider not in MOVIE_IMAGE_PROVIDERS:
+                logging.warning("%s doesn't support movie images", provider)
+                continue
+            url = MOVIE_IMAGE_PROVIDERS[provider](ids,
+                                                  image_type,
+                                                  languages)
+        elif media_type == MediaType.tvshow:
+            if provider not in TVSHOW_IMAGE_PROVIDERS:
+                logging.warning("%s doesn't support tvshow images", provider)
+                continue
+            url = TVSHOW_IMAGE_PROVIDERS[provider](ids,
+                                                   image_type,
+                                                   languages)
+        elif media_type == MediaType.season:
+            if provider not in SEASON_IMAGE_PROVIDERS:
+                logging.warning("%s doesn't support season images", provider)
+                continue
+            url = SEASON_IMAGE_PROVIDERS[provider](ids,
+                                                   season,
+                                                   image_type,
+                                                   languages)
+        elif media_type == MediaType.episode:
+            if provider not in EPISODE_IMAGE_PROVIDERS:
+                logging.warning("%s doesn't support episode images", provider)
+                continue
+            url = EPISODE_IMAGE_PROVIDERS[provider](ids,
+                                                    season,
+                                                    episode,
+                                                    image_type,
+                                                    languages)
         if url is not None:
             return url
 
-    print("Sorry we didn't found a {0} for this media file".format(image_type))
+    print("  Sorry we didn't found a {0} for this media file".format(image_type))
 
-def sort(videofile, settings, force=None):
+
+def sort(videofile, settings):
     """ sorts a videofile """
     videofile_basename = os.path.basename(videofile)
     videofile_abspath = os.path.abspath(videofile)
@@ -92,15 +102,15 @@ def sort(videofile, settings, force=None):
     print("\nProcessing \"{0}\"".format(videofile_abspath))
 
     try:
-        guess = guess_vid(videofile_abspath, nfofile, force)
+        guess = guess_vid(videofile_abspath, nfofile)
     except LookupError as err:
         print(err)
         print("Skipping this file")
         return
 
-    if guess['type'] == 'movie':
-        # Get tmdb_id
-        movie = tmdb.get_movie_info(guess["tmdb_id"],
+    if guess['type'] == MediaType.movie:
+        # Get movie info from tmdb
+        movie = tmdb.get_movie_info(guess["ids"],
                                     settings['general']['languages'])
 
         # set replacement rules
@@ -119,8 +129,8 @@ def sort(videofile, settings, force=None):
 
         # set image downloads
         downloads = [
-            {"mediatype": "movie",
-             "tmdb_id":   guess['tmdb_id'],
+            {"mediatype": MediaType.movie,
+             "ids":   guess['ids'],
              "images": [
                  {"imagetype":   "poster",
                   "providers":   settings['movie']['poster_providers'],
@@ -156,12 +166,12 @@ def sort(videofile, settings, force=None):
             overwrite=settings['general']['overwrite_nfos']
         )
 
-    elif guess['type'] == 'episode':
+    elif guess['type'] == MediaType.episode:
         tvshow = tmdb.get_tvshow_info(
-            guess["tmdb_id"],
+            guess["ids"],
             settings['general']['languages'])
 
-        episode = tmdb.get_episode_info(guess['tmdb_id'],
+        episode = tmdb.get_episode_info(guess['ids'],
                                         guess['season'],
                                         guess['episode'],
                                         settings['general']['languages'])
@@ -183,8 +193,8 @@ def sort(videofile, settings, force=None):
             return
 
         downloads = [
-            {"mediatype": "tvshow",
-             "tmdb_id":   guess['tmdb_id'],
+            {"mediatype": MediaType.tvshow,
+             "ids":   guess['ids'],
              "images": [
                  {"imagetype":   "poster",
                   "providers":   settings['tvshow']['poster_providers'],
@@ -207,15 +217,15 @@ def sort(videofile, settings, force=None):
                  {"imagetype":   "art",
                   "providers":   settings['movie']['art_providers'],
                   "destination": settings['movie']['art_path']}]},
-            {"mediatype": "season",
-             "tmdb_id":   guess['tmdb_id'],
+            {"mediatype": MediaType.season,
+             "ids":       guess['ids'],
              "season":    episode['season_number'],
              "images": [
                  {"imagetype":   "poster",
                   "providers":   settings['season']['poster_providers'],
                   "destination": settings['season']['poster_path']}]},
-            {"mediatype": "episode",
-             "tmdb_id":   guess['tmdb_id'],
+            {"mediatype": MediaType.episode,
+             "ids":       guess['ids'],
              "season":    episode['season_number'],
              "episode":   episode['episode_number'],
              "images": [
@@ -256,13 +266,13 @@ def sort(videofile, settings, force=None):
             if image["providers"][0] == "None":
                 continue
 
-            if download['mediatype'] == 'movie':
+            if download['mediatype'] == MediaType.movie:
                 base_path = settings['movie']['base_path']
             else:
                 base_path = settings['tvshow']['base_path']
 
             url = get_image_url(
-                tmdb_id=download['tmdb_id'],
+                ids=download['ids'],
                 image_type=image['imagetype'],
                 media_type=download['mediatype'],
                 languages=settings['general']['languages'],

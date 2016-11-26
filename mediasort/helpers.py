@@ -26,6 +26,7 @@ DOWNLOADED = []
 
 
 def merge_dict(base_dict, overwrite_dict):
+    """ appends missing informations to base_dict """
     for key in overwrite_dict:
         if key not in base_dict:
             base_dict[key] = overwrite_dict[key]
@@ -35,6 +36,27 @@ def merge_dict(base_dict, overwrite_dict):
                 base_dict[key] = overwrite_dict[key]
             elif isinstance(overwrite_dict[key], dict):
                 merge_dict(base_dict[key], overwrite_dict[key])
+
+
+def get_key_fallback(base_dict, fallback_dict, key,
+                     base_translation=None, fallback_translation=None):
+    """ returns a key from multiple sources """
+    if base_translation is not None and key in base_translation:
+        base_key = base_translation[key]
+    else:
+        base_key = key
+
+    if fallback_translation is not None and key in fallback_translation:
+        fallback_key = fallback_translation[key]
+    else:
+        fallback_key = key
+
+    if base_key in base_dict:
+        return base_dict[base_key]
+    elif fallback_key in fallback_dict:
+        return fallback_dict[fallback_key]
+    else:
+        return None
 
 
 def replace_by_rule(rules, string):

@@ -50,4 +50,4 @@ VIDEOFILES = mediasort.helpers.find(ARGS['source'],
                                     CONFIG['videofiles']['minimal_file_size'])
 
 for videofile in VIDEOFILES:
-    mediasort.sort(videofile, CONFIG, ARGS['force_type'])
+    mediasort.sort(videofile, CONFIG)

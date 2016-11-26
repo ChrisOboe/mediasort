@@ -18,125 +18,113 @@
 
 import os
 import logging
+from datetime import datetime
+import xml.etree.ElementTree
+
 from guessit import guessit
 from . import tmdb
+from . import helpers
+from .enums import MediaType
 
 
-def parse_nfo(nfofile):
-    """ parses an nfo """
-    import xml.etree.ElementTree
+def guess_nfo(nfofile):
+    """ returns a guess based on a nfo """
+
+    logging.info("    Guessing based on nfo")
+
     try:
-        xml = xml.etree.ElementTree.parse(nfofile)
-    except xml.etree.ElementTree.ParseError as err:
-        print(err)
+        xmlfile = xml.etree.ElementTree.parse(nfofile)
+    except xml.etree.ElementTree.ParseError:
+        logging.info("      Malformed nfo")
         return {}
 
-    nfo = {}
-    root = xml.getroot()
+    guess = {}
+    root = xmlfile.getroot()
 
     if root.tag == "movie":
-        nfo['type'] = "movie"
-        nfo['title'] = root.find('title').text
+        guess["type"] = MediaType.movie
+        guess["title"] = root.find("title").text
     elif root.tag == "episodedetails":
-        nfo['type'] = "episode"
+        guess["type"] = MediaType.episode
+        guess["title"] = root.find("showtitle").text
 
-    wanted = ["releasegroup", "source", "tmdb_id", "episode", "season"]
+    wanted = ["releasegroup", "source", "episode", "season"]
     for i in wanted:
         entry = root.find(i)
         if entry is not None:
-            nfo[i] = entry.text
+            guess[i] = entry.text
 
-    return nfo
+    # special treatment for ids
+    guess['ids'] = {}
+    ids = root.find("ids")
+    wanted = ["tmdb", "tvdb", "imdb"]
+    for i in wanted:
+        entry = ids.find(i)
+        if entry is not None:
+            guess['ids'][i] = entry.text
+
+    return guess
 
 
-def guess_vid(filename, nfofile, forced_type):
-    """ guess based on nfo. if not found based on filename """
+def guess_filename(filename):
+    """ returns a guess based on the filename """
+
+    logging.info("    Guessing based on filename")
+
+    nameguess = guessit(filename)
+
     guess = {}
-    complete = False
+
+    if "title" in nameguess:
+        guess["title"] = nameguess["title"]
+
+    if nameguess["type"] == "movie":
+        guess["type"] = MediaType.movie
+        if "year" in nameguess:
+            guess["year"] = datetime.strptime(str(nameguess["year"]), "%Y")
+    elif nameguess["type"] == "episode":
+        guess["type"] = MediaType.episode
+        guess["episode"] = nameguess["episode"]
+        guess["season"] = nameguess["season"]
+
+    if "format" in nameguess:
+        guess["source"] = nameguess["format"]
+
+    if "release_group" in nameguess:
+        guess["releasegroup"] = nameguess["release_group"]
+
+    return guess
+
+
+def guess_vid(filename, nfofile):
+    """ guess based on nfo. if not found based on filename """
+
+    logging.info("  Trying to guess file")
+
     if os.path.exists(nfofile):
-        complete = True
-        logging.info("  Guessing by nfofile")
-        nfo = parse_nfo(nfofile)
-        if "type" in nfo:
-            logging.info("    Found type: {0}".format(nfo["type"]))
-            guess["type"] = nfo["type"]
-            if guess["type"] == "episode" and "episode" in nfo:
-                logging.info("    Found episode: {0}".format(nfo["episode"]))
-                guess["episode"] = nfo["episode"]
-            else: complete = False
-            if guess["type"] == "episode" and "season" in nfo:
-                logging.info("    Found season: {0}".format(nfo["season"]))
-                guess["season"] = nfo["season"]
-            else: complete = False
-        else: complete = False
-        if "tmdb_id" in nfo:
-            logging.info("    Found TMDb ID: {0}".format(nfo["tmdb_id"]))
-            guess["tmdb_id"] = nfo["tmdb_id"]
-        else: complete = False
-        if "releasegroup" in nfo:
-            logging.info("    Found releasegroup: {0}".format(nfo["releasegroup"]))
-            guess["releasegroup"] = nfo["releasegroup"]
-        else: complete = False
-        if "source" in nfo:
-            logging.info("    Found source: {0}".format(nfo["source"]))
-            guess["source"] = nfo["source"]
-        else: complete = False
+        guess = guess_nfo(nfofile)
+    else:
+        guess = {}
 
-    if not complete:
-        logging.info("  Guessing by filename")
+    helpers.merge_dict(guess, guess_filename(filename))
 
-        options = {}
-        if "type" in guess and forced_type == None: forced_type = guess["type"]
-        options['type'] = forced_type
+    for entry in guess:
+        logging.info("    Guessed %s as %s", entry, guess[entry])
 
-        guess_filename = guessit(filename, options)
+    if "ids" not in guess or \
+       "tmdb" not in guess["ids"] or \
+       "imdb" not in guess["ids"] or \
+       ("tvdb" not in guess["ids"] and guess["type"] == MediaType.episode):
+        guess["ids"] = tmdb.get_ids(guess["type"],
+                                    guess["title"],
+                                    None if "year" not in guess else guess["year"])
 
-        if "type" not in guess:
-            logging.info("    Guessed type: {0}".format(guess_filename["type"]))
-            guess["type"] = guess_filename["type"]
+    if "ids" not in guess:
+        raise LookupError("No IDs found")
+    if guess["type"] == MediaType.episode:
+        if "episode" not in guess:
+            raise LookupError("No episode number found")
+        if "season" not in guess:
+            raise LookupError("No season number found")
 
-        if "releasegroup" not in guess and "release_group" in guess_filename:
-            logging.info("    Guessed releasegroup: {0}".format(guess_filename["release_group"]))
-            guess["releasegroup"] = guess_filename["release_group"]
-
-        if "source" not in guess and "format" in guess_filename:
-            logging.info("    Guessed source: {0}".format(guess_filename["format"]))
-            guess["source"] = guess_filename["format"]
-
-        if guess["type"] == "episode":
-            if "episode" not in guess and "episode" in guess_filename:
-                logging.info("    Guessed episode: {0}".format(guess_filename["episode"]))
-                guess["episode"] = guess_filename["episode"]
-
-            if "seaseon" not in guess and "season" in guess_filename:
-                logging.info("    Guessed season: {0}".format(guess_filename["season"]))
-                guess["season"] = guess_filename["season"]
-
-        if "tmdb_id" not in guess:
-            title = None
-            year = None
-            if guess["type"] == "movie":
-                if "title" in guess_filename:
-                    logging.info("    Guessed title: {0}".format(guess_filename["title"]))
-                    title = guess_filename["title"]
-
-                if "year" in guess_filename:
-                    logging.info("    Guessed year: {0}".format(guess_filename["year"]))
-                    year = guess_filename["year"]
-
-            if guess["type"] == "episode" and "title" in guess_filename:
-                logging.info("    Guessed tvshow name: {0}".format(guess_filename["title"]))
-                title = guess_filename["title"]
-
-            guess["tmdb_id"] = tmdb.get_id(guess["type"], title, year)
-
-    if "releasegroup" not in guess:
-        guess['releasegroup'] = None
-    if "source" not in guess:
-        guess['source'] = None
-
-    if guess["tmdb_id"] == None: raise LookupError("No TMDb entry found")
-    if guess["type"] == "episode":
-        if "episode" not in guess: raise LookupError("No episode number found")
-        if "season" not in guess: raise LookupError("No season number found")
     return guess
