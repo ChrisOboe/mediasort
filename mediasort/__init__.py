@@ -26,7 +26,6 @@ from . import nfo
 from . import tmdb
 from . import fanarttv
 from .enums import MediaType
-from . import config
 
 MOVIE_IMAGE_PROVIDERS = {
     'tmdb': tmdb.get_movie_image_url,
