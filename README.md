@@ -1,4 +1,4 @@
-# MediaSort Readme
+# mediasort Readme
 
 ## A library for automaticly sorting mediafiles
 MediaSort tries to get the movie / tvshow name from the filename, and scrapes
