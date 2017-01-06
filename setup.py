@@ -9,13 +9,13 @@ def readme():
 
 setup(
     name='mediasort',
-    version='0.2.0',
+    version='0.2.1',
     author='Chris Oboe',
     author_email='chrisoboe@eml.cc',
-    description='A tool for automaticly sorting movies and episodes',
+    description='A library for automaticly sorting movies and episodes',
     license='GPLv3+',
-    url='https://git.smackmack.industries/ChrisOboe/MediaSort',
-    download_url='https://git.smackmack.industries/ChrisOboe/MediaSort/archive/v0.2.0.tar.gz',
+    url='https://github.com/ChrisOboe/mediasort',
+    download_url='https://github.com/ChrisOboe/mediasort/archive/v0.2.1.tar.gz',
     packages=['mediasort'],
     install_requires=[
         'python-dateutil',
@@ -27,7 +27,7 @@ setup(
         "Intended Audience :: Developers",
         "Operating System :: OS Independent",
         "Programming Language :: Python :: 3.5",
-        "Topic :: Utilities",
+        "Topic :: Software Development :: Libraries :: Python Modules",
         "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)"
     ],
 )
