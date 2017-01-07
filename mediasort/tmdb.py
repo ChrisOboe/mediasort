@@ -203,7 +203,7 @@ def get_movie_image_url(ids, image_type, languages):
         return (BASE_URL
                 + SIZE['poster_size']
                 + get_movie_info(ids, languages)['poster_path'])
-    elif image_type == 'backdrop':
+    elif image_type == 'background':
         return (BASE_URL
                 + SIZE['backdrop_size']
                 + get_movie_info(ids, languages)['backdrop_path'])
