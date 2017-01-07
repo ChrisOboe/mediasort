@@ -157,7 +157,9 @@ def sort(videofile, settings):
         # write nfo
         nfo.write_movie_nfo(
             movie=movie,
-            dst=helpers.replace_by_rule(replacers, settings['movie']['nfo_path']),
+            dst=helpers.replace_by_rule(replacers,
+                                        settings['movie']['base_path']
+                                        + settings['movie']['nfo_path']),
             rating_country=settings['general']['languages'][0],
             releasegroup=guess['releasegroup'],
             source=guess['source'],
@@ -185,9 +187,9 @@ def sort(videofile, settings):
             '$ext': videofile_extension
         }
 
-        dst = (settings['tvshow']['base_path']
-               + helpers.replace_by_rule(replacers,
-                                         settings['episode']['episode_path']))
+        dst = (helpers.replace_by_rule(replacers,
+                                       settings['tvshow']['base_path']
+                                       + settings['episode']['episode_path']))
         if os.path.exists(dst) and settings['general']['overwrite_videos']:
             return
 
