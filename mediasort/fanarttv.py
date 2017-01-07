@@ -79,7 +79,7 @@ def get_images(mid, category):
         + str(mid)
         + "?api_key=" + API_KEY)
 
-    #print(FANARTTV_BASE_URL + "/"
+    # print(FANARTTV_BASE_URL + "/"
     #      + category + "/"
     #      + str(mid)
     #      + "?api_key=" + API_KEY)
@@ -105,7 +105,8 @@ def get_movie_image_url(ids, image_type, languages):
     fa_languages.insert(1, "00")
     for language in fa_languages:
         for fa_image_type in MOVIE_IMAGE_TYPES[image_type]:
-            if fa_image_type not in get_images(ids["tmdb"], 'movies'):
+            if get_images(ids["tmdb"], 'movies') is None or \
+               fa_image_type not in get_images(ids["tmdb"], 'movies'):
                 continue
             for image in get_images(ids["tmdb"], 'movies')[fa_image_type]:
                 if image['lang'] == language:
