@@ -57,11 +57,12 @@ def guess_nfo(nfofile):
     # special treatment for ids
     guess['ids'] = {}
     ids = root.find("ids")
-    wanted = ["tmdb", "tvdb", "imdb"]
-    for i in wanted:
-        entry = ids.find(i)
-        if entry is not None:
-            guess['ids'][i] = entry.text
+    if ids is not None:
+        wanted = ["tmdb", "tvdb", "imdb"]
+        for i in wanted:
+            entry = ids.find(i)
+            if entry is not None:
+                guess['ids'][i] = entry.text
 
     return guess
 
