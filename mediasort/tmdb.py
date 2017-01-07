@@ -148,6 +148,7 @@ def get_movie_info(ids, languages):
         return MOVIE_CACHE[ids["tmdb"]]
 
     MOVIE_CACHE[ids["tmdb"]] = {}
+    MOVIE_CACHE[ids["tmdb"]]["ids"] = ids
     for language in languages:
         helpers.merge_dict(MOVIE_CACHE[ids["tmdb"]],
                            tmdbsimple.Movies(ids["tmdb"]).info(
@@ -164,6 +165,7 @@ def get_tvshow_info(ids, languages):
         return TVSHOW_CACHE[id]
 
     TVSHOW_CACHE[ids["tmdb"]] = {}
+    TVSHOW_CACHE[ids["tmdb"]]["ids"] = ids
     for language in languages:
         helpers.merge_dict(TVSHOW_CACHE[ids["tmdb"]],
                            tmdbsimple.TV(ids["tmdb"]).info(

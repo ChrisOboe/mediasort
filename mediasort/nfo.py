@@ -73,7 +73,6 @@ def write_tvshow_nfo(series, rating_country, dst,
     for rating in series['content_ratings']['results']:
         if rating['iso_3166_1'] == rating_country:
             general['mpaa'] = rating['rating']
-    general['tmdb_id'] = series['id']
 
     studios = []
     for studio in series['networks']:
@@ -90,6 +89,10 @@ def write_tvshow_nfo(series, rating_country, dst,
         nfo += "\t<genre>{0}</genre>\n".format(genre)
     for studio in studios:
         nfo += "\t<studio>{0}</studio>\n".format(studio)
+    nfo += "\t<ids>\n"
+    for tvid in series["ids"]:
+        nfo += "\t\t<{0}>{1}</{0}>\n".format(tvid, series["ids"][tvid])
+    nfo += "\t<ids>\n"
     for actor in actors:
         nfo += ("\t<actor>\n"
                 "\t\t<name>{0}</name>\n"
@@ -145,6 +148,10 @@ def write_episode_nfo(series, episode, dst, releasegroup=None, source=None,
         nfo += "\t<director>{0}</director>\n".format(director)
     for writer in writers:
         nfo += "\t<credits>{0}</credits>\n".format(writer)
+    nfo += "\t<ids>\n"
+    for tvid in series["ids"]:
+        nfo += "\t\t<{0}>{1}</{0}>\n".format(tvid, series["ids"][tvid])
+    nfo += "\t</ids>\n"
     for actor in actors:
         nfo += ("\t<actor>\n"
                 "\t\t<name>{0}</name>\n"
@@ -182,7 +189,6 @@ def write_movie_nfo(movie, dst, rating_country, releasegroup=None, source=None,
         general['releasegroup'] = releasegroup
     if source:
         general['source'] = source
-    general['tmdb_id'] = movie['id']
 
     studios = []
     for studio in movie['production_companies']:
@@ -217,6 +223,10 @@ def write_movie_nfo(movie, dst, rating_country, releasegroup=None, source=None,
         nfo += "\t<studio>{0}</studio>\n".format(studio)
     for country in countries:
         nfo += "\t<country>{0}</country>\n".format(country)
+    nfo += "\t<ids>\n"
+    for mid in movie["ids"]:
+        nfo += "\t\t<{0}>{1}</{0}>\n".format(mid, movie["ids"][mid])
+    nfo += "\t</ids>\n"
     for actor in actors:
         nfo += ("\t<actor>\n"
                 "\t\t<name>{0}</name>\n"
