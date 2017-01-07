@@ -200,10 +200,14 @@ def get_episode_info(ids, season, episode, languages):
 def get_movie_image_url(ids, image_type, languages):
     """ returns a image_type image for id for given languages"""
     if image_type == 'poster':
+        if get_movie_info(ids, languages)['poster_path'] is None:
+            return None
         return (BASE_URL
                 + SIZE['poster_size']
                 + get_movie_info(ids, languages)['poster_path'])
     elif image_type == 'background':
+        if get_movie_info(ids, languages)['backdrop_path'] is None:
+            return None
         return (BASE_URL
                 + SIZE['backdrop_size']
                 + get_movie_info(ids, languages)['backdrop_path'])
@@ -215,12 +219,16 @@ def get_tvshow_image_url(ids, image_type, languages):
     """ returns the url of a tvshow image """
 
     if image_type == 'poster':
+        if not get_tvshow_info(ids["tmdb"], languages)['images']['posters']:
+            return None
         return (BASE_URL
                 + SIZE['poster_size']
                 + get_tvshow_info(
                     ids["tmdb"],
                     languages)['images']['posters'][0]['file_path'])
     elif image_type == 'background':
+        if not get_tvshow_info(ids["tmdb"], languages)['images']['backdrops']:
+            return None
         return (BASE_URL
                 + SIZE['backdrop_size']
                 + get_tvshow_info(
@@ -242,6 +250,9 @@ def get_season_image_url(ids, season, image_type, languages):
             language=languages[0],
             include_image_language=image_langs)
 
+        if not SEASON_IMAGE_CACHE[ids["tmdb"]]['posters']:
+            return None
+
     return (BASE_URL
             + SIZE['poster_size']
             + SEASON_IMAGE_CACHE[ids["tmdb"]]['posters'][0]['file_path'])
@@ -251,6 +262,9 @@ def get_episode_image_url(ids, season, episode, image_type, languages):
     """ returns the episode thumnail, image_type and languages is ignored """
     if image_type != "thumbnail":
         raise LookupError("TMDB only supports thumnail as episode image")
+
+    if get_episode_info(ids, season, episode, languages)['still_path'] is None:
+        return None
 
     return (BASE_URL
             + SIZE['still_size']
