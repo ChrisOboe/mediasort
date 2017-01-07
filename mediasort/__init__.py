@@ -102,6 +102,10 @@ def sort(videofile, settings):
 
     try:
         guess = guess_vid(videofile_abspath, nfofile)
+        if 'releasegroup' not in guess:
+            guess['releasegroup'] = None
+        if 'source' not in guess:
+            guess['source'] = None
     except LookupError as err:
         print(err)
         print("Skipping this file")
@@ -255,7 +259,8 @@ def sort(videofile, settings):
             releasegroup=guess['releasegroup'],
             source=guess['source'],
             simulate=settings['debug']['simulate_nfo'],
-            overwrite=settings['general']['overwrite_nfos'])
+            overwrite=settings['general']['overwrite_nfos']
+        )
 
     else:
         return
