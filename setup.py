@@ -9,13 +9,13 @@ def readme():
 
 setup(
     name='mediasort',
-    version='0.2.1',
+    version='0.2.2',
     author='Chris Oboe',
     author_email='chrisoboe@eml.cc',
     description='A library for automaticly sorting movies and episodes',
     license='GPLv3+',
     url='https://github.com/ChrisOboe/mediasort',
-    download_url='https://github.com/ChrisOboe/mediasort/archive/v0.2.1.tar.gz',
+    download_url='https://github.com/ChrisOboe/mediasort/archive/v0.2.2.tar.gz',
     packages=['mediasort'],
     install_requires=[
         'python-dateutil',
