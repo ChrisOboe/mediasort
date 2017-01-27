@@ -1,0 +1,81 @@
+---
+
+videofile:
+	minimal_file_size
+
+tmdb:
+	api_key: bla
+	cachefile: bla
+	cache_validity: bla
+	https_download: true
+
+paths:
+	movie:
+		videofile: bla
+		poster: bla
+		background:
+		disc:
+		banner:
+		logo:
+		clearart:
+		art:
+
+providers:
+	guess: ["nfo", "filename"]
+	identificator:
+		movie: ["nfo", "tmdb"]
+		episode: ["nfo", "tmdb"]
+	metadata:
+		movie:
+			title: ["tmdb"]
+			originaltitle: ["tmdb"]
+			set: ["tmdb"]
+			premiered: ["tmdb"]
+			tagline: ["tmdb"]
+			plot: ["tmdb"]
+			certification: ["tmdb"]
+			rating: ["tmdb"]
+			votes: ["tmdb"]
+			studios: ["tmdb"]
+			countries: ["tmdb"]
+			genres: ["tmdb"]
+			writers: ["tmdb"]
+			directors: ["tmdb"]
+			actors: ["tmdb"]
+		tvshow:
+			title: ["tmdb"]
+			premiered: ["tmdb"]
+			plot: ["tmdb"]
+			certification: ["tmdb"]
+			rating: ["tmdb"]
+			votes: ["tmdb"]
+			studios: ["tmdb"]
+			genres: ["tmdb"]
+			actors: ["tmdb"]
+		episode:
+			title: ["tmdb"]
+			premiered: ["tmdb"]
+			plot: ["tmdb"]
+			rating: ["tmdb"]
+			votes: ["tmdb"]
+	image:
+		movie:
+			poster: ["tmdb", "fanarttv"]
+			background: ["tmdb", "fanarttv"]
+			disc: ["fanarttv"]
+			banner: ["fanarttv"]
+			logo: ["fanarttv"]
+			clearart: ["fanarttv"]
+			art: ["fanarttv"]
+		tvshow:
+			poster: ["tmdb", "fanarttv"]
+			background: ["tmdb", "fanarttv"]
+			banner: ["fanarttv"]
+			logo: ["fanarttv"]
+			clearart: ["fanarttv"]
+			charart: ["fanarttv"]
+			art: ["fanarttv"]
+		season:
+			poster: ["tmdb"]
+		episode:
+			thumbnail: ["tmdb"]

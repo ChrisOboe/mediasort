@@ -1,0 +1,24 @@
+<tvshow>
+	<title>${title}</title>
+	<rating>${rating}</rating>
+	<votes>${votes}</votes>
+	<year>${premiered}</year>
+	<plot>${plot}</plot>
+	<mpaa>${certification}</mpaa>
+	<id>${imdb}</id>
+	% for studio in studios:
+	<studio>${studio}</studio>
+	% endfor
+	% for scriptwriter in scriptwriters:
+	<credits>${scriptwriter}</credits>
+	% endfor
+	% for director in directors:
+	<director>${director}</director>
+	% endfor
+	% for actor in actors:
+	<actor>
+		<name>${actor['name']}</name>
+		<role>${actor['role']}</role>
+	</actor>
+	% endfor
+</episodedetails>

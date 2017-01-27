@@ -25,6 +25,23 @@ import shutil
 DOWNLOADED = []
 
 
+def contains_elements(elements, dictionary):
+    """ returns False if any element is not in dictionary or none """
+    for element in elements:
+        if element not in dictionary:
+            return False
+        if dictionary[element] is None:
+            return False
+    return True
+
+
+def get_entry(entry, dictionary):
+    """ always returns from dict, even when not existing """
+    if entry not in dictionary:
+        return None
+    return dictionary[entry]
+
+
 def merge_dict(base_dict, overwrite_dict):
     """ appends missing informations to base_dict """
     for key in overwrite_dict:
@@ -36,6 +53,20 @@ def merge_dict(base_dict, overwrite_dict):
                 base_dict[key] = overwrite_dict[key]
             elif isinstance(overwrite_dict[key], dict):
                 merge_dict(base_dict[key], overwrite_dict[key])
+
+
+def merge_entry(old_entry, new_entry):
+    """ appends missing informations to old_entry """
+    if isinstance(old_entry, dict):
+        merge_dict(old_entry, new_entry)
+    elif isinstance(old_entry, list):
+        if not old_entry:
+            old_entry = new_entry
+    elif isinstance(old_entry, str):
+        if old_entry == '':
+            old_entry = new_entry
+    elif old_entry is None:
+        old_entry = new_entry
 
 
 def get_key_fallback(base_dict, fallback_dict, key,
@@ -66,22 +97,18 @@ def replace_by_rule(rules, string):
     return string
 
 
-def download(src, dst, simulate=False, overwrite=False, append_ext=True):
+def download(src, dst, append_ext=True):
     """ Downloads something """
     if append_ext:
         ext = os.path.splitext(urlparse(src).path)[1]
         dst += ext
     if dst in DOWNLOADED:
         return
-    if not overwrite and os.path.exists(dst):
-        return
 
-    logging.info("  Downloading\n    from: {0}\n    to:   {1}"
-                 .format(src, dst))
+    logging.info("Downloading \"{1}\" to \"{0}\"".format(src, dst))
     DOWNLOADED.append(dst)
-    if not simulate:
-        create_path(dst)
-        urlretrieve(src, dst)
+    create_path(dst)
+    urlretrieve(src, dst)
 
 
 def create_path(path):

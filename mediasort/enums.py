@@ -22,22 +22,51 @@ from enum import Enum
 
 class MediaType(Enum):
     """ enum for mediatypes """
-    (movie,
-     tvshow,
-     season,
-     episode,
-     artist,
-     album) = range(6)
+    movie = "movie"
+    tvshow = "tvshow"
+    season = "season"
+    episode = "episode"
+    artist = "artist"
+    album = "album"
 
 
 class ImageType(Enum):
     """ enum for imagetypes """
-    (poster,
-     background,
-     logo,
-     disc,
-     art,
-     clearart,
-     banner,
-     charart,
-     thumb) = range(9)
+    poster = "poster"
+    background = "background"
+    disc = "disc"
+    banner = "banner"
+    logo = "logo"
+    charart = "charart"
+    clearart = "clearart"
+    art = "art"
+    thumbnail = "thumbnail"
+
+
+class MetadataType(Enum):
+    """ enum for movie metadata """
+    title = "title"
+    originaltitle = "originaltitle"
+    set = "set"
+    premiered = "premiered"
+    tagline = "tagline"
+    plot = "plot"
+    certification = "certification"
+    rating = "rating"
+    votes = "votes"
+    studios = "studios"
+    countries = "countries"
+    genres = "genres"
+    writers = "writers"
+    directors = "directors"
+    actors = "actors"
+
+
+class ConfigError(Exception):
+    """ Should be raised when configuration is invalid """
+    pass
+
+
+class NotEnoughData(Exception):
+    """ Should be raised when a needet value is missing """
+    pass

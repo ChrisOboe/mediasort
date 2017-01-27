@@ -1,0 +1,139 @@
+guess
+=====
+- filepath     Text
+- type         MediaType
+- title        Text
+- year         Number    (only for movies)
+- releasegroup Text
+- source       Text
+- season       Number    (only for episodes)
+- episode      Number    (only for episodes)
+
+identificator
+=============
+- type: MediaType
+- tmdb:    Text
+- tvdb:    Text   (only for episodes)
+- imdb:    Text
+- episode: Number (only for episodes)
+- season:  Number (only for episodes)
+
+actor
+=====
+- name: Text
+- role: Text
+
+movie-metadata
+==============
+- title: Text
+- originaltitle: Text
+- premiered: Date
+- tagline: Text
+- plot: Text
+- set: Text
+- certification: Text
+- rating: Number
+- votes: Number
+- studios: List<Text>
+- countries: List<Text>
+- genres: List<Text>
+- directors: List<Text>
+- scriptwriters: List<Text>
+- actors: List<actor>
+
+tvshow-metadata
+===============
+- title: Text
+- premiered: Date
+- plot: Text
+- certification: Text
+- rating: Number
+- votes: Number
+- studios: List<Text>
+- genres: List<Text>
+- actors: List<actor>
+
+episode-metadata
+================
+- title: Text
+- showtitle: Text
+- plot: Text
+- premiered: Date
+- rating: Number
+- votes: Number
+
+flow
+guess provider -> identificator provider -> metadata provider -> write from template
+                                         -> image provider    -> download
+                                         -> video provider    -> youtube-dl
+
+guess providers
+===============
+get_guess:
+	input:  filepath, config
+	output: guess
+
+identificator providers
+=======================
+get_identificator_list:
+	output: list<Text>
+	note: imdb, tvdb... etc
+get_identificator:
+	input:  guess, identificator, config
+	output: identificator
+
+metadata providers:
+===================
+get_movie_metadata:
+	input:  identifictor, metadatatype, language, config
+	output: movie_metadata
+get_episode_metadata:
+	input:  identifictor, metadatatype, language, config
+	output: episode_metadata
+get_tvshow_metadata:
+	input:  identifictor, metadatatype, language, config
+	output: episode_metadata
+
+image providers:
+================
+get_movie_image
+	input: identificator, imagetype, language, config
+	output: url
+get_tvshow_image
+	input: identificator, imagetype, language, config
+	output: url
+get_season_image
+	input: identificator, imagetype, language, config
+	output: url
+get_episode_image
+	input: identificator, imagetype, language, config
+	output: url
+
+Note:
+The config is always the provider specific config
+Every provider should have a init, which checks config
+and tells programm what they are able to do
+
+
+ImageTypes
+==========
+movie:
+	- poster
+	- background
+	- disc
+	- banner
+	- logo
+	- clearart
+	- art
+tvshow:
+	- poster
+	- background
+	- banner
+	- logo
+	- clearart
+	- charart
+	- art
+season:
+	- poster
+episode:
+	- thumbnail

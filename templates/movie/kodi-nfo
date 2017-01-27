@@ -1,0 +1,30 @@
+<movie>
+	<title>${title}</title>
+	<originaltitle>${originaltitle}</originaltitle>
+	<year>${premiered}</year>
+	<tagline>${tagline}</tagline>
+	<plot>${plot}</plot>
+	<set>${set}</set>
+	<mpaa>${certification}</mpaa>
+	<rating>${rating}</rating>
+	<votes>${votes}</votes>
+	% for studio in studios:
+	<studio>${studio}</studio>
+	% endfor
+	% for genre in genres:
+	<genre>${genre}</genre>
+	% endfor
+	% for director in directors:
+	<director>${director}</director>
+	% endfor
+	% for scriptwriter in scriptwriters:
+	<credits>${scriptwriter}</credits>
+	% endfor
+	% for actor in actors:
+	<actor>
+		<name>${actor['name']}</name>
+		<role>${actor['role']}</role>
+	</actor>
+	% endfor
+	<id>${imdb}</id>
+</movie>
