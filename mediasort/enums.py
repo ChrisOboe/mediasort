@@ -20,8 +20,14 @@
 from enum import Enum
 
 
+class PluginType(Enum):
+    guess = "guess"
+    identificator = "identificator"
+    metadata = "metadata"
+    images = "images"
+
+
 class MediaType(Enum):
-    """ enum for mediatypes """
     movie = "movie"
     tvshow = "tvshow"
     season = "season"
@@ -31,7 +37,6 @@ class MediaType(Enum):
 
 
 class ImageType(Enum):
-    """ enum for imagetypes """
     poster = "poster"
     background = "background"
     disc = "disc"
@@ -44,7 +49,6 @@ class ImageType(Enum):
 
 
 class MetadataType(Enum):
-    """ enum for movie metadata """
     title = "title"
     originaltitle = "originaltitle"
     set = "set"
@@ -62,11 +66,7 @@ class MetadataType(Enum):
     actors = "actors"
 
 
-class ConfigError(Exception):
-    """ Should be raised when configuration is invalid """
-    pass
-
-
-class NotEnoughData(Exception):
-    """ Should be raised when a needet value is missing """
-    pass
+class IdType(Enum):
+    tmdb = "tmdb"
+    imdb = "imdb"
+    tvdb = "tvdb"

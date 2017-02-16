@@ -14,394 +14,186 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-""" sorts a videofile """
+""" initializes mediasort and its plugins """
 
-import os
-import logging
-import dateutil
+from mediasort.enums import PluginType, MediaType, MetadataType, ImageType
+from mediasort import error
 
-from . import nfo_reader
-from . import filename
-from . import helpers
-from . import nfo
-from . import tmdb
-from . import fanarttv
-from . import *
 
-PROVIDERS = {
-    'guess': {
-        'nfo': nfo_reader.get_guess,
-        'filename': filename.get_guess,
-    },
-    'identificator': {
-        MediaType.movie: {
-            'nfo': nfo_reader.get_identificator,
-            'tmdb': tmdb.get_identificator,
-        },
-        MediaType.episode: {
-            'nfo': nfo_reader.get_identificator,
-            'tmdb': tmdb.get_identificator,
-        },
-    },
-    'metadata': {
-        MediaType.movie: {
-            MetadataType.title: {
-                'tmdb': tmdb.get_movie_metadata,
+def check_function(module, function):
+    """ check if a module contains the functions from functionlist """
+    if not hasattr(module, function):
+        raise error.InvalidPlugin("Plugin {0} is missing {1}".format(
+            module.__name__,
+            function))
+
+
+def load_module(name, config):
+    # check if module is already loaded
+    modulename = 'mediasort.plugins' + '.' + name
+    if modulename in sys.modules:
+        return sys.modules[modulename]
+
+    path = '{0}/plugins/{1}.py'.format(
+        os.path.dirname(os.path.abspath(__file__)),
+        name)
+
+    # check if module exists
+    if not os.path.isfile(path):
+        print("The module {0} doesn't exist in the plugin folder".format(name))
+        sys.exit(1)
+
+    module = import_module(modulename)
+    check_function(module, 'init')
+
+    module.init(config)
+    return module
+
+
+def initialize_plugins(config):
+    """
+    Calls the init function of every plugin
+    checks if the plugins has the needed functions
+    checks if some configurations are valid
+    """
+
+    plugins = {
+        PluginType.guess: [],
+        PluginType.identificator: {
+            MediaType.movie: {
+                'modules': [],
+                'ids': [],
             },
-            MetadataType.originaltitle: {
-                'tmdb': tmdb.get_movie_metadata,
-            },
-            MetadataType.set: {
-                'tmdb': tmdb.get_movie_metadata,
-            },
-            MetadataType.premiered: {
-                'tmdb': tmdb.get_movie_metadata,
-            },
-            MetadataType.tagline: {
-                'tmdb': tmdb.get_movie_metadata,
-            },
-            MetadataType.plot: {
-                'tmdb': tmdb.get_movie_metadata,
-            },
-            MetadataType.certification: {
-                'tmdb': tmdb.get_movie_metadata,
-            },
-            MetadataType.rating: {
-                'tmdb': tmdb.get_movie_metadata,
-            },
-            MetadataType.votes: {
-                'tmdb': tmdb.get_movie_metadata,
-            },
-            MetadataType.studios: {
-                'tmdb': tmdb.get_movie_metadata,
-            },
-            MetadataType.countries: {
-                'tmdb': tmdb.get_movie_metadata,
-            },
-            MetadataType.genres: {
-                'tmdb': tmdb.get_movie_metadata,
-            },
-            MetadataType.writers: {
-                'tmdb': tmdb.get_movie_metadata,
-            },
-            MetadataType.directors: {
-                'tmdb': tmdb.get_movie_metadata,
-            },
-            MetadataType.actors: {
-                'tmdb': tmdb.get_movie_metadata,
+            MediaType.episode: {
+                'modules': [],
+                'ids': [],
             },
         },
-        MediaType.tvshow: {
-            MetadataType.title: {
-                'tmdb': tmdb.get_tvshow_metadata,
+        PluginType.metadata: {
+            MediaType.movie: {
+                MetadataType.title: [],
+                MetadataType.originaltitle: [],
+                MetadataType.premiered: [],
+                MetadataType.tagline: [],
+                MetadataType.plot: [],
+                MetadataType.set: [],
+                MetadataType.certification: [],
+                MetadataType.rating: [],
+                MetadataType.votes: [],
+                MetadataType.studios: [],
+                MetadataType.countries: [],
+                MetadataType.genres: [],
+                MetadataType.directors: [],
+                MetadataType.scriptwriters: [],
+                MetadataType.actors: [],
             },
-            MetadataType.premiered: {
-                'tmdb': tmdb.get_tvshow_metadata,
+            MediaType.tvshow: {
+                MetadataType.title: [],
+                MetadataType.premiered: [],
+                MetadataType.plot: [],
+                MetadataType.certification: [],
+                MetadataType.rating: [],
+                MetadataType.votes: [],
+                MetadataType.studios: [],
+                MetadataType.genres: [],
+                MetadataType.actors: [],
             },
-            MetadataType.plot: {
-                'tmdb': tmdb.get_tvshow_metadata,
-            },
-            MetadataType.certification: {
-                'tmdb': tmdb.get_tvshow_metadata,
-            },
-            MetadataType.rating: {
-                'tmdb': tmdb.get_tvshow_metadata,
-            },
-            MetadataType.votes: {
-                'tmdb': tmdb.get_tvshow_metadata,
-            },
-            MetadataType.studios: {
-                'tmdb': tmdb.get_tvshow_metadata,
-            },
-            MetadataType.genres: {
-                'tmdb': tmdb.get_tvshow_metadata,
-            },
-            MetadataType.actors: {
-                'tmdb': tmdb.get_tvshow_metadata,
-            },
-        },
-        MediaType.episode: {
-            MetadataType.title: {
-                'tmdb': tmdb.get_episode_metadata,
-            },
-            MetadataType.premiered: {
-                'tmdb': tmdb.get_episode_metadata,
-            },
-            MetadataType.plot: {
-                'tmdb': tmdb.get_episode_metadata,
-            },
-            MetadataType.rating: {
-                'tmdb': tmdb.get_episode_metadata,
-            },
-            MetadataType.votes: {
-                'tmdb': tmdb.get_episode_metadata,
+            MediaType.episode: {
+                MetadataType.title: [],
+                MetadataType.showtitle: [],
+                MetadataType.plot: [],
+                MetadataType.premiered: [],
+                MetadataType.rating: [],
+                MetadataType.votes: [],
             },
         },
-    },
-    'image': {
-        MediaType.movie: {
-            ImageType.poster: {
-                'tmdb': tmdb.get_movie_image,
-                'fanarttv': fanarttv.get_movie_image,
+        PluginType.images: {
+            MediaType.movie: {
+                ImageType.poster: [],
+                ImageType.background: [],
+                ImageType.disc: [],
+                ImageType.banner: [],
+                ImageType.logo: [],
+                ImageType.clearart: [],
+                ImageType.art: [],
             },
-            ImageType.background: {
-                'tmdb': tmdb.get_movie_image,
-                'fanarttv': fanarttv.get_movie_image,
+            MediaType.tvshow: {
+                ImageType.poster: [],
+                ImageType.background: [],
+                ImageType.banner: [],
+                ImageType.logo: [],
+                ImageType.clearart: [],
+                ImageType.charart: [],
+                ImageType.art: [],
             },
-            ImageType.disc: {
-                'fanarttv': fanarttv.get_movie_image,
+            MediaType.season: {
+                ImageType.poster: [],
             },
-            ImageType.banner: {
-                'fanarttv': fanarttv.get_movie_image,
-            },
-            ImageType.logo: {
-                'fanarttv': fanarttv.get_movie_image,
-            },
-            ImageType.clearart: {
-                'fanarttv': fanarttv.get_movie_image,
-            },
-            ImageType.art: {
-                'fanarttv': fanarttv.get_movie_image,
-            },
-        },
-        MediaType.tvshow: {
-            ImageType.poster: {
-                'tmdb': tmdb.get_tvshow_image,
-                'fanarttv': fanarttv.get_tvshow_image,
-            },
-            ImageType.background: {
-                'tmdb': tmdb.get_tvshow_image,
-                'fanarttv': fanarttv.get_tvshow_image,
-            },
-            ImageType.banner: {
-                'fanarttv': fanarttv.get_tvshow_image,
-            },
-            ImageType.logo: {
-                'fanarttv': fanarttv.get_tvshow_image,
-            },
-            ImageType.clearart: {
-                'fanarttv': fanarttv.get_tvshow_image,
-            },
-            ImageType.charart: {
-                'fanarttv': fanarttv.get_tvshow_image,
-            },
-            ImageType.art: {
-                'fanarttv': fanarttv.get_tvshow_image,
+            MediaType.episode: {
+                ImageType.thumbnail: [],
             },
         },
-        MediaType.season: {
-            ImageType.poster: {
-                'tmdb': tmdb.get_season_image,
-            },
-        },
-        MediaType.episode: {
-            ImageType.thumbnail: {
-                'tmdb': tmdb.get_episode_image,
-            }
-        },
-    },
-}
-
-
-def check_providers(config):
-    """ checks if there is a misconfigured provider """
-    for providertype in config['providers']:
-        if providertype == 'guess':
-            for provider in config['providers'][providertype]:
-                if provider not in PROVIDERS[providertype]:
-                    raise ConfigError(
-                        "{0} is not a valid {1} provider".format(
-                            provider,
-                            providertype))
-        if providertype == 'identificator':
-            for mediatype in config['providers']['identificator']:
-                for provider in config['providers']['identificator'][mediatype]:
-
-
-        
-        
-        if (providertype == 'guess'
-                or providertype == 'identificator'
-                or providertype == 'metadata'):
-            for provider in config['providers'][providertype]:
-                if provider not in PROVIDERS[providertype]:
-                    raise ConfigError(
-                        "{0} is not a valid {1} provider".format(
-                            provider,
-                            providertype))
-        elif providertype == 'image':
-
-
-def get_guess(filepath, config):
-    """ returns a guess for a filename """
-
-    guess = {
-        'filepath': None,
-        'type': None,
-        'title': None,
-        'year': None,
-        'releasegroup': None,
-        'source': None,
-        'season': None,
-        'episode': None,
     }
 
-    for provider in config['providers']['guess']:
-        if provider not in PROVIDERS['guess']:
-            logging.warning("%s isn't a allowed guess provider", provider)
-            continue
-        helpers.merge_dict(guess,
-                           GUESS_PROVIDERS[provider](filepath,
-                                                     config[provider]))
+    # initializing and function existance checking
 
-    needed = ['filepath', 'title', 'type']
-    if not helpers.contains_elements(needed, guess):
-        raise NotEnoughData("Needed value couldn't be guessed")
+    for plugintype in config['plugins']:
+        if plugintype == PluginType.guess:
+            for plugin in config['plugins'][category]:
+                # load the module
+                module = load_module(plugin, config[plugin])
+                # check needed functions
+                check_function(module, 'get_guess')
+                # add module to dict
+                plugins[category].append(module)
 
-    if guess['type'] == MediaType.episode:
-        needed = ['season', 'episode']
-        if not helpers.contains_elements(needed, guess):
-            raise NotEnoughData("Needed value couldn't be guessed")
+        elif plugintype == PluginType.identificator:
+            for mediatype in config['plugins'][category]:
+                for plugin in config['plugins'][category][mediatype]:
+                    # load the module
+                    module = load_module(plugin, config[plugin])
+                    # check needed functions
+                    check_function(module, 'get_identificator_list')
+                    check_function(module, 'get_identificator')
+                    # add module to dict
+                    plugins[category][mediatype]['modules'].append(module)
+                    plugins[category][mediatype]['ids'].extend(
+                        module.get_identificator_list())
 
-    return guess
+        elif plugintype == PluginType.metadata:
+            for mediatype in config['plugins'][category]:
+                for metadatatype in config['plugins'][category][mediatype]:
+                    for plugin in config['plugins'][category][mediatype][metadatatype]:
+                        # load the module
+                        module = load_module(plugin, config[plugin])
+                        # check needed functions
+                        check_function(module, 'get_needed_ids')
+                        check_function(module, 'get_metadata')
+                        # add module to dict
+                        plugins[category][mediatype][metadatatype].append(module)
 
+        elif plugintype == PluginType.image:
+            for mediatype in config['plugins'][category]:
+                for imagetype in config['plugins'][category][mediatype]:
+                    for plugin in config['plugins'][category][mediatype][imagetype]:
+                        # load the module
+                        module = load_module(plugin, config[plugin])
+                        # check needed functions
+                        check_function(module, 'get_needed_ids')
+                        check_function(module, 'get_image')
+                        # add module to dict
+                        plugins[category][mediatype][imagetype].append(module)
 
-def get_identificator(guess, config):
-    """ returns a identificator for a guess """
+    # since the pluginlist is built, we can now do some checks
+    for mediatype in plugins[PluginType.metadata]:
+        for metadatatype in plugins[PluginType.metadata][mediatype]:
+            plugin = plugins[PluginType.metadata][mediatype][metadatatype]
+            ids = plugins[PluginType.identificator][mediatype]['ids']
+            # check if we have the ids that are needed by the selected plugins
+            if not plugin.get_needed_ids().issubsetof(ids):
+                raise error.InvalidConfig()
 
-    providers = PROVIDERS['identificator'][guess['type']]
-
-    if guess['type'] == MediaType.movie:
-        identificator = {
-            'type': MediaType.movie,
-            'tmdb': None,
-            'imdb': None,
-        }
-    elif guess['type'] == MediaType.episode:
-        identificator = {
-            'type': MediaType.episode,
-            'tmdb': None,
-            'imdb': None,
-            'tvdb': None,
-            'season': guess['season'],
-            'episode': guess['episode'],
-        }
-
-    for provider in config['providers']['identificator'][guess['type']]:
-        helpers.merge_dict(identificator,
-                           providers[provider](guess,
-                                               identificator,
-                                               config[provider]))
-
-    if guess['type'] == MediaType.movie:
-        needed = ['tmdb', 'imdb']
-    elif guess['type'] == MediaType.episode:
-        needed = ['tmdb', 'imdb', 'tvdb', 'season', 'episode']
-    if not helpers.contains_elements(needed, identificator):
-        raise NotEnoughData("Needed idendificator couldn't be found")
-
-    return identificator
-
-
-def get_metadata(identificator, config):
-    """ returns the metadata """
-
-    if identificator['type'] == MediaType.movie:
-        metadata = {
-            MetadataType.title: None,
-            MetadataType.originaltitle: None,
-            MetadataType.premiered: None,
-            MetadataType.tagline: None,
-            MetadataType.plot: None,
-            MetadataType.set: None,
-            MetadataType.certification: None,
-            MetadataType.rating: None,
-            MetadataType.votes: None,
-            MetadataType.studios: [],
-            MetadataType.countries: [],
-            MetadataType.genres: [],
-            MetadataType.directors: [],
-            MetadataType.scriptwriters: [],
-            MetadataType.actors: [],
-        }
-    elif identificator['type'] == MediaType.episode:
-        metadata = {
-            MetadataType.title: None,
-            MetadataType.showtitle: None,
-            MetadataType.plot: None,
-            MetadataType.premiered: None,
-            MetadataType.rating: None,
-            MetadataType.votes: None,
-        }
-    elif identificator['type'] == MediaType.tvshow:
-        metadata = {
-            MetadataType.title: None,
-            MetadataType.premiered: None,
-            MetadataType.plot: None,
-            MetadataType.certification: None,
-            MetadataType.rating: None,
-            MetadataType.votes: None,
-            MetadataType.studios: [],
-            MetadataType.genres: [],
-            MetadataType.actors: [],
-        }
-
-    for language in config['languages']['metadata']:
-        for metadatatype in metadata:
-            for provider in config['providers']['metadata'][identificator['type']][metadatatype]:
-                helpers.merge_entry(metadata[metadatatype], PROVIDERS['metadata'][identificator['type']][provider](
-                    identificator,
-                    metadatatype,
-                    language,
-                    config[provider]))
-
-    return metadata
-
-
-def get_images(identificator, config):
-    """ returns a specific image url """
-
-    if identificator['type'] == MediaType.movie:
-        images = {
-            ImageType.poster: None,
-            ImageType.background: None,
-            ImageType.disc: None,
-            ImageType.banner: None,
-            ImageType.logo: None,
-            ImageType.clearart: None,
-            ImageType.art: None,
-        }
-    elif identificator['type'] == MediaType.episode:
-        images = {
-            ImageType.thumbnail: None,
-        }
-    elif identificator['type'] == MediaType.tvshow:
-        images = {
-            ImageType.poster: None,
-            ImageType.background: None,
-            ImageType.banner: None,
-            ImageType.logo: None,
-            ImageType.clearart: None,
-            ImageType.charart: None,
-            ImageType.art: None,
-        }
-    elif identificator['type'] == MediaType.season:
-        images = {
-            ImageType.poster: None,
-        }
-
-    url = None
-    for imagetype in images:
-        for language in config['languages']['images']:
-            for provider in config['providers'][imagetype]:
-                if provider is None:
-                    continue
-                images[imagetype] = PROVIDERS['image_' + identificator['type']][provider](
-                    identificator,
-                    imagetype,
-                    language)
-
-    return images
+    return plugins
 
 
 def sort(videofile, config):
