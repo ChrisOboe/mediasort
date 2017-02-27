@@ -52,6 +52,8 @@ def get_guess(filepath, providers):
     for provider in providers:
         guess.update(provider.get_guess(filepath))
 
+    # TODO: the mediatype shouldn't be hardcoded anywere.
+    # think about a possible solution
     needed = ['filepath', 'title', 'type']
     if guess['type'] == MediaType.episode:
         needed.extend(['season', 'episode'])
@@ -62,39 +64,20 @@ def get_guess(filepath, providers):
     return guess
 
 
-def get_identificator(guess, providers):
+def get_identificator(guess, providers, ids):
     """ returns a identificator for a guess """
 
-    identificator = None
-
-    if guess['type'] == MediaType.movie:
-        identificator = {
-            'type': MediaType.movie,
-            'tmdb': None,
-            'imdb': None,
-        }
-    elif guess['type'] == MediaType.episode:
-        identificator = {
-            'type': MediaType.episode,
-            'tmdb': None,
-            'imdb': None,
-            'tvdb': None,
-            'season': guess['season'],
-            'episode': guess['episode'],
-        }
-    else:
-        raise error.InvalidMediaType
+    identificator = {'type': guess['type']}
+    for idtype in guess['type'].IdType:
+        identificator[idtype] = None
 
     for provider in providers[guess['type']]['modules']:
         identificator.update(provider.get_identificator(guess, identificator))
 
-    if guess['type'] == MediaType.movie:
-        needed = ['tmdb', 'imdb']
-    elif guess['type'] == MediaType.episode:
-        needed = ['tmdb', 'imdb', 'tvdb', 'season', 'episode']
-
-    if not contains_elements(needed, identificator):
-        raise error.NotEnoughData("Needed idendificator couldn't be found")
+    if not contains_elements(ids['wanted'], identificator):
+        raise error.NotEnoughData(
+            "Needed id wasn't provided by any selected identificator"
+        )
 
     return identificator
 
@@ -102,49 +85,9 @@ def get_identificator(guess, providers):
 def get_metadata(identificator, languages, providers):
     """ returns the metadata """
 
-    metadata = None
-
-    if identificator['type'] == MediaType.movie:
-        metadata = {
-            MetadataType.title: None,
-            MetadataType.originaltitle: None,
-            MetadataType.premiered: None,
-            MetadataType.tagline: None,
-            MetadataType.plot: None,
-            MetadataType.set: None,
-            MetadataType.certification: None,
-            MetadataType.rating: None,
-            MetadataType.votes: None,
-            MetadataType.studios: [],
-            MetadataType.countries: [],
-            MetadataType.genres: [],
-            MetadataType.directors: [],
-            MetadataType.scriptwriters: [],
-            MetadataType.actors: [],
-        }
-    elif identificator['type'] == MediaType.episode:
-        metadata = {
-            MetadataType.title: None,
-            MetadataType.showtitle: None,
-            MetadataType.plot: None,
-            MetadataType.premiered: None,
-            MetadataType.rating: None,
-            MetadataType.votes: None,
-        }
-    elif identificator['type'] == MediaType.tvshow:
-        metadata = {
-            MetadataType.title: None,
-            MetadataType.premiered: None,
-            MetadataType.plot: None,
-            MetadataType.certification: None,
-            MetadataType.rating: None,
-            MetadataType.votes: None,
-            MetadataType.studios: [],
-            MetadataType.genres: [],
-            MetadataType.actors: [],
-        }
-    else:
-        raise error.InvalidMediaType
+    metadata = {}
+    for metadatatype in identificator['type'].metadataTypes:
+        metadata[metadatatype] = None
 
     for metadatatype in metadata:
         for language in languages:
@@ -160,38 +103,9 @@ def get_metadata(identificator, languages, providers):
 def get_images(identificator, languages, providers):
     """ returns a specific image url """
 
-    images = None
-
-    if identificator['type'] == MediaType.movie:
-        images = {
-            ImageType.poster: None,
-            ImageType.background: None,
-            ImageType.disc: None,
-            ImageType.banner: None,
-            ImageType.logo: None,
-            ImageType.clearart: None,
-            ImageType.art: None,
-        }
-    elif identificator['type'] == MediaType.episode:
-        images = {
-            ImageType.thumbnail: None,
-        }
-    elif identificator['type'] == MediaType.tvshow:
-        images = {
-            ImageType.poster: None,
-            ImageType.background: None,
-            ImageType.banner: None,
-            ImageType.logo: None,
-            ImageType.clearart: None,
-            ImageType.charart: None,
-            ImageType.art: None,
-        }
-    elif identificator['type'] == MediaType.season:
-        images = {
-            ImageType.poster: None,
-        }
-    else:
-        raise error.InvalidMediaType
+    images = {}
+    for imagetype in identificator['type'].imageTypes:
+        images[imagetype] = None
 
     for imagetype in images:
         for language in languages:

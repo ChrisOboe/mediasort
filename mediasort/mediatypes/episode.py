@@ -1,4 +1,4 @@
-# Copyright (C) 2016  Oboe, Chris <chrisoboe@eml.cc>
+# Copyright (C) 2016-2017  Oboe, Chris <chrisoboe@eml.cc>
 # Author: Oboe, Chris <chrisoboe@eml.cc>
 #
 # This program is free software: you can redistribute it and/or modify
@@ -15,20 +15,23 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-""" some enums used everywhere in the programm """
+class Episode():
+    idTypes = {
+        'tmdb': "tmdb",
+        'tvdb': "tvdb",
+        'season': "season",
+        'episode': "episode",
+    }
 
-from mediasort.mediatypes import movie, episode, tvshow, season
+    metadataTypes = {
+        'title': "title",
+        'showtitle': "showtitle",
+        'premiered': "premiered",
+        'plot': "plot",
+        'rating': "rating",
+        'votes': "votes",
+    }
 
-
-class PluginType():
-    guess = "guess"
-    identificator = "identificator"
-    metadata = "metadata"
-    images = "images"
-
-
-class MediaType():
-    movie = movie
-    tvshow = tvshow
-    season = season
-    episode = episode
+    imageTypes = {
+        'thumbnail': "thumbnail",
+    }
