@@ -15,12 +15,20 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
+import copy
 from shutil import move
+import logging
 
 from mediasort import error
-from mediasort.enums import PluginType, MediaType, MetadataType, ImageType
+from mediasort.enums import PluginType
 from mediasort.template import get_paths, write_nfo
 from mediasort.download import download
+
+
+# create logger
+logging.basicConfig()
+logger = logging.getLogger('mediasort')
+logger.setLevel(logging.DEBUG)
 
 
 # helpers
@@ -50,13 +58,18 @@ def get_guess(filepath, providers):
      }
 
     for provider in providers:
-        guess.update(provider.get_guess(filepath))
+        logger.debug("Using {0} to guess from file".format(provider.__name__))
+        try:
+            guess.update(provider.get_guess(filepath))
+        except (error.NotEnoughData):
+            logger.debug("{0} didn't got anything".format(provider.__name__))
+            pass
 
-    # TODO: the mediatype shouldn't be hardcoded anywere.
-    # think about a possible solution
-    needed = ['filepath', 'title', 'type']
-    if guess['type'] == MediaType.episode:
-        needed.extend(['season', 'episode'])
+    if 'type' not in guess:
+        raise error.NotEnoughData("Needed value couldn't be guessed")
+
+    needed = ['filepath', 'title']
+    needed.extend(guess['type'].value.neededGuess.value)
 
     if not contains_elements(needed, guess):
         raise error.NotEnoughData("Needed value couldn't be guessed")
@@ -64,17 +77,24 @@ def get_guess(filepath, providers):
     return guess
 
 
-def get_identificator(guess, providers, ids):
+def get_identificator(guess, providers, ids, callback):
     """ returns a identificator for a guess """
 
     identificator = {'type': guess['type']}
-    for idtype in guess['type'].IdType:
+    for idtype in guess['type'].value.idTypes.value:
         identificator[idtype] = None
 
-    for provider in providers[guess['type']]['modules']:
-        identificator.update(provider.get_identificator(guess, identificator))
+    for provider in providers[guess['type'].name]:
+        logger.debug("Using {0} to get ids".format(provider.__name__))
+        try:
+            identificator.update(
+                provider.get_identificator(guess, identificator, callback)
+            )
+        except error.NotEnoughData:
+            logger.debug("{0} didn't got anything".format(provider.__name__))
+            pass
 
-    if not contains_elements(ids['wanted'], identificator):
+    if not contains_elements(ids['wanted'][guess['type'].name], identificator):
         raise error.NotEnoughData(
             "Needed id wasn't provided by any selected identificator"
         )
@@ -86,16 +106,23 @@ def get_metadata(identificator, languages, providers):
     """ returns the metadata """
 
     metadata = {}
-    for metadatatype in identificator['type'].metadataTypes:
+    for metadatatype in identificator['type'].value.metadataTypes.value:
         metadata[metadatatype] = None
 
     for metadatatype in metadata:
         for language in languages:
             for provider in providers[metadatatype]:
-                metadata[metadatatype].update(provider.get_metadata(
-                    identificator,
+                logger.debug("Using {0}/{2} to get {1}".format(
+                    provider.__name__,
                     metadatatype,
-                    language))
+                    language
+                ))
+                if metadata[metadatatype] is None:
+                    metadata[metadatatype] = provider.get_metadata(
+                        identificator,
+                        metadatatype,
+                        language
+                    )
 
     return metadata
 
@@ -104,22 +131,57 @@ def get_images(identificator, languages, providers):
     """ returns a specific image url """
 
     images = {}
-    for imagetype in identificator['type'].imageTypes:
+    for imagetype in identificator['type'].value.imageTypes.value:
         images[imagetype] = None
 
     for imagetype in images:
         for language in languages:
-            for provider in providers:
-                images[imagetype].update(provider.get_image(
-                    identificator,
+            for provider in providers[imagetype]:
+                logger.debug("Using {0}/{2} to get {1}".format(
+                    provider.__name__,
                     imagetype,
-                    language))
+                    language
+                ))
+                if images[imagetype] is None:
+                    images[imagetype] = provider.get_image(
+                        identificator,
+                        imagetype,
+                        language
+                    )
 
     return images
 
 
+# sorting helpers
+def meta_sort(guess, identificator, metadata, plugins, paths, languages,
+              overwrite):
+    """ writes nfo and downloads images"""
+    images = get_images(
+        identificator,
+        languages['metadata'],
+        plugins[PluginType.images.name][identificator['type'].name]
+    )
+
+    # write the nfo
+    if overwrite['nfo'] or not os.path.isfile(paths['nfo']):
+        logger.debug("Writing " + paths['nfo'])
+        write_nfo(paths['template'],
+                  {'metadata': metadata,
+                   'identificator': identificator,
+                   'guess': guess},
+                  paths['nfo'])
+
+    # download the images
+    for image in images:
+        if images[image] and \
+           (overwrite['images'] or not os.path.isfile(paths[image])):
+            logger.debug("Downloading " + paths[image])
+            download(images[image], paths[image])
+
+
 # sorting
-def sort(videofile, plugins, paths, languages, overwrite):
+def sort(videofile, plugins, ids, paths, languages, overwrite=False,
+         callbacks=None):
     """ sorts a videofile """
     videofile = {
         'basename': os.path.basename(videofile),
@@ -129,36 +191,58 @@ def sort(videofile, plugins, paths, languages, overwrite):
         )[1].lower()[1:]
     }
 
-    print("\nProcessing \"{0}\"".format(videofile['abspath']))
+    if not callbacks:
+        callbacks = {}
 
-    # get the data
-    guess = get_guess(videofile['abspath'], plugins[PluginType.guess])
-    identificator = get_identificator(guess, plugins[PluginType.identificator])
-    metadata = get_metadata(identificator,
-                            languages['metadata'],
-                            plugins[PluginType.metadata])
-    images = get_images(identificator,
-                        languages['metadata'],
-                        plugins[PluginType.images])
+    logger.info("\nProcessing \"{0}\"".format(videofile['abspath']))
 
-    # render the paths
-    rendered_paths = get_paths(paths[identificator['type']], metadata)
+    guess = get_guess(videofile['abspath'], plugins[PluginType.guess.name])
+    identificator = get_identificator(guess,
+                                      plugins[PluginType.identificator.name],
+                                      ids,
+                                      callbacks.get('identificator'))
 
-    # create all the paths
-    for path in rendered_paths:
-        pathonly = os.path.dirname(path)
-        if not os.path.exists(pathonly):
-            os.makedirs(pathonly)
+    metadata = get_metadata(
+        identificator,
+        languages['metadata'],
+        plugins[PluginType.metadata.name][identificator['type'].name]
+    )
 
-    # write the nfo
-    if overwrite['nfo'] and not os.path.isfile(rendered_paths['nfo']):
-        write_nfo(rendered_paths['template'], metadata, rendered_paths['nfo'])
+    # get paths
+    try:
+        rendered_paths = get_paths(paths[identificator['type'].name], metadata)
+    except PermissionError as error:
+        logger.error("You don't have needed permissions: {0}".format(error))
+        return None
 
-    # download the images
-    for image in images:
-        if overwrite['images'] and not os.path.isfile(rendered_paths[image]):
-            download(images[image], rendered_paths[image])
+    # create base path
+    os.makedirs(rendered_paths['base'], exist_ok=True)
+
+    # write nfo and download images
+    try:
+        meta_sort(guess, identificator, metadata, plugins, rendered_paths,
+                  languages, overwrite)
+    except FileNotFoundError as error:
+        logger.error("A needed file wasn't found: {0}".format(error))
+        return None
 
     # move the media
-    if overwrite['media'] and not os.path.isfile(rendered_paths['media']):
-        move(videofile['abspath'], rendered_paths['media'])
+    if overwrite['media'] or not os.path.isfile(rendered_paths['media']):
+        logger.debug("Moving media to " + rendered_paths['media'])
+        #move(
+        #    videofile['abspath'],
+        #    "{0}.{1}".format(rendered_paths['media'], videofile['extension'])
+        #)
+
+    # sort successors
+    if hasattr(identificator['type'], 'successors'):
+        for mediatype in identificator['type'].successors:
+            newIdentificator = copy.deepcopy(identificator)
+            newIdentificator['type'] = mediatype
+            newMetadata = get_metadata(newIdentificator,
+                                    languages['metadata'],
+                                    plugins[PluginType.metadata.name])
+            newPaths = get_paths(paths[newIdentificator['type'].__name__],
+                                 metadata)
+            meta_sort(guess, newIdentificator, newMetadata, plugins, newPaths,
+                      languages, overwrite)

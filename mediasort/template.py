@@ -14,16 +14,19 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-
 from mako.template import Template
 
 
 def get_paths(paths, metadata):
-    """ applies the metadata to the paths """
     outpaths = {}
-
     for path in paths:
-        outpaths[path] = Template(paths[path]).render_unicode(**metadata)
+        if path == 'template':
+            outpaths[path] = paths[path]
+        elif path != 'base':
+            outpaths[path] = Template(paths['base']).render_unicode(**metadata)
+            outpaths[path] += Template(paths[path]).render_unicode(**metadata)
+        elif path == 'base':
+            outpaths[path] = Template(paths[path]).render_unicode(**metadata)
 
     return outpaths
 

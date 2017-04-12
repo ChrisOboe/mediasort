@@ -16,15 +16,20 @@
 
 """ provides guesses from nfo """
 
+import logging
 import os
 import re
 import xml.etree.ElementTree
 
-from .enums import MediaType
+from mediasort.enums import MediaType
+from mediasort import error
 
 
-def get_guess(filepath, config):
-    # pylint: disable=unused-argument
+def init(config):
+    pass
+
+
+def get_guess(filepath):
     """ returns a guess based on a nfo """
 
     guess = {
@@ -36,7 +41,9 @@ def get_guess(filepath, config):
     try:
         xmlfile = xml.etree.ElementTree.parse(nfofile)
     except xml.etree.ElementTree.ParseError:
-        raise LookupError("Malformed nfo")
+        raise error.NotEnoughData("no xml based nfo")
+    except FileNotFoundError:
+        raise error.NotEnoughData("nfo not found")
 
     root = xmlfile.getroot()
 
@@ -56,18 +63,24 @@ def get_guess(filepath, config):
     return guess
 
 
-def get_identificator(guess, identificator, config):
-    # pylint: disable=unused-argument
+def get_identificator_list(mediatype):
+    if mediatype == MediaType.movie.name or \
+       mediatype == MediaType.episode.name:
+        return ['imdb']
+
+
+def get_identificator(guess, identificator, callback):
     """ tries to find imdb ids in nfo """
 
     nfofile = os.path.splitext(guess['filepath'])[0] + ".nfo"
-    with open(nfofile, 'r') as nfo:
-        for line in nfo:
-            imdb_id = re.search(r'tt\d{7}', line)
-            if imdb_id is not None:
-                identificator['imdb'] = imdb_id.group(0)
-                break
+    try:
+        with open(nfofile, 'r') as nfo:
+            for line in nfo:
+                imdb_id = re.search(r'tt\d{7}', line)
+                if imdb_id is not None:
+                    identificator['imdb'] = imdb_id.group(0)
+                    break
+    except FileNotFoundError:
+        raise error.NotEnoughData("nfo not found")
 
     return identificator
-
-

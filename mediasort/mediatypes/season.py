@@ -14,15 +14,19 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+from enum import Enum
 
-class Season():
+
+class season(Enum):
+    neededGuess = ['title', 'season']
+
     idTypes = {
         'tmdb': "tmdb",
         'tvdb': "tvdb",
         'season': "season",
     }
 
-    metadataType = {
+    metadataTypes = {
         'name': "name",
         'premiered': "premiered",
         'plot': "plot",

@@ -14,8 +14,14 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+from enum import Enum
+from mediasort.mediatypes import season, tvshow
 
-class Episode():
+
+class episode(Enum):
+    neededGuess = ['title', 'season', 'episode']
+    successors = [season.season, tvshow.tvshow]
+
     idTypes = {
         'tmdb': "tmdb",
         'tvdb': "tvdb",

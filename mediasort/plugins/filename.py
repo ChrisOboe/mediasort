@@ -16,19 +16,20 @@
 
 """ provides guesses from filename """
 
-import logging
 from datetime import datetime
 
 from guessit import guessit
 
-from .enums import MediaType
+from mediasort import error
+from mediasort.enums import MediaType
 
 
-def get_guess(filepath, config):
-    # pylint: disable=unused-argument
+def init(config):
+    pass
+
+
+def get_guess(filepath):
     """ returns a guess based on the filename """
-
-    logging.info("Guessing based on filename")
 
     guess = {
         'filepath': filepath,
@@ -45,9 +46,9 @@ def get_guess(filepath, config):
             guess["year"] = datetime.strptime(str(nameguess["year"]), "%Y")
     elif nameguess["type"] == "episode":
         if 'episode' not in nameguess:
-            raise LookupError("No episode number found")
+            raise error.NotEnoughData("No episode number found")
         if 'season' not in nameguess:
-            raise LookupError("No season number found")
+            raise error.NotEnoughData("No season number found")
         guess["type"] = MediaType.episode
         guess["episode"] = nameguess["episode"]
         guess["season"] = nameguess["season"]

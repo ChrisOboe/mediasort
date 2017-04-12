@@ -65,10 +65,10 @@ def initialize_plugins(config):
     """
 
     plugins = {
-        PluginType.guess: [],
-        PluginType.identificator: {},
-        PluginType.metadata: {},
-        PluginType.images: {},
+        PluginType.guess.name: [],
+        PluginType.identificator.name: {},
+        PluginType.metadata.name: {},
+        PluginType.images.name: {},
     }
 
     ids = {
@@ -77,71 +77,85 @@ def initialize_plugins(config):
     }
 
     for mediatype in MediaType:
-        plugins[PluginType.identificator][mediatype.__name__] = []
-        plugins[PluginType.metadata][mediatype.__name__] = {}
-        plugins[PluginType.images][mediatype.__name__] = {}
-        for metadatatype in mediatype.metadataTypes:
-            plugins[PluginType.metadata][mediatype.__name__][metadatatype] = []
-        for imagetype in mediatype.imageTypes:
-            plugins[PluginType.images][mediatype.__name__][imagetype] = []
-        ids['wanted'][mediatype.__name__] = []
-        ids['provided'][mediatype.__name__] = []
+        plugins[PluginType.identificator.name][mediatype.name] = []
+        plugins[PluginType.metadata.name][mediatype.name] = {}
+        plugins[PluginType.images.name][mediatype.name] = {}
+        for metadatatype in mediatype.value.metadataTypes.value:
+            plugins[PluginType.metadata.name][mediatype.name][metadatatype] = []
+        for imagetype in mediatype.value.imageTypes.value:
+            plugins[PluginType.images.name][mediatype.name][imagetype] = []
+        ids['wanted'][mediatype.name] = []
+        ids['provided'][mediatype.name] = []
 
     # initializing and function existance checking
     for plugintype in config['plugins']:
-        if plugintype == PluginType.guess:
+        if plugintype == PluginType.guess.name:
             for plugin in config['plugins'][plugintype]:
                 # load the module
-                module = load_module(plugin, config[plugin])
+                module = load_module(plugin, config.get(plugin))
                 # check needed functions
                 check_function(module, 'get_guess')
                 # add module to dict
                 plugins[plugintype].append(module)
 
-        elif plugintype == PluginType.identificator:
+        elif plugintype == PluginType.identificator.name:
             for mediatype in config['plugins'][plugintype]:
                 for plugin in config['plugins'][plugintype][mediatype]:
                     # load the module
-                    module = load_module(plugin, config[plugin])
+                    module = load_module(plugin, config.get(plugin))
                     # check needed functions
                     check_function(module, 'get_identificator_list')
                     check_function(module, 'get_identificator')
                     # add module to dict
                     plugins[plugintype][mediatype].append(module)
-                    ids['provided'][mediatype].extend(
-                        module.get_identificator_list()
-                    )
+                    ids['provided'][mediatype] = list(set(
+                        ids['provided'][mediatype] +
+                        module.get_identificator_list(mediatype)
+                    ))
 
-        elif plugintype == PluginType.metadata:
+        elif plugintype == PluginType.metadata.name:
             for mediatype in config['plugins'][plugintype]:
                 for metadatatype in config['plugins'][plugintype][mediatype]:
                     for plugin in config['plugins'][plugintype][mediatype][metadatatype]:
                         # load the module
-                        module = load_module(plugin, config[plugin])
+                        module = load_module(plugin, config.get(plugin))
                         # check needed functions
                         check_function(module, 'get_needed_ids')
                         check_function(module, 'get_metadata')
                         # add module to dict
-                        ids['wanted'][mediatype].extend(module.get_needed_ids)
+                        ids['wanted'][mediatype] = list(set(
+                            ids['wanted'][mediatype] +
+                            module.get_needed_ids(mediatype)
+                        ))
                         plugins[plugintype][mediatype][metadatatype].append(module)
 
-        elif plugintype == PluginType.image:
+        elif plugintype == PluginType.images.name:
             for mediatype in config['plugins'][plugintype]:
                 for imagetype in config['plugins'][plugintype][mediatype]:
                     for plugin in config['plugins'][plugintype][mediatype][imagetype]:
                         # load the module
-                        module = load_module(plugin, config[plugin])
+                        module = load_module(plugin, config.get(plugin))
                         # check needed functions
                         check_function(module, 'get_needed_ids')
                         check_function(module, 'get_image')
                         # add module to dict
-                        ids['wanted'][mediatype].extend(module.get_needed_ids)
+                        ids['wanted'][mediatype] = list(set(
+                            ids['wanted'][mediatype] +
+                            module.get_needed_ids(mediatype)
+                        ))
                         plugins[plugintype][mediatype][imagetype].append(module)
+
+    # if we have depending mediatypes (eg season and tvshow depends on episode)
+    # we use the ids from the parents
+    for mediatype in MediaType:
+        if 'successors' in mediatype.value.__members__:
+            for successor in mediatype.value.successors.value:
+                ids['provided'][successor.__name__] = ids['provided'][mediatype.name]
 
     # since the pluginlist is built, we can now do some checks
     for mediatype in MediaType:
-        if not ids['wanted'][mediatype.__name__].issubsetof(
-               ids['provided'][mediatype.__name__]):
-            raise error.InvalidConfig("A plugin needs an id which isn't provided by the identificator providers")
+        for mid in ids['wanted'][mediatype.name]:
+            if mid not in ids['provided'][mediatype.name]:
+                raise error.InvalidConfig("A plugin needs a {0} id which isn't provided by the identificator providers".format(mid))
 
     return {'plugins': plugins, 'ids': ids}

@@ -14,15 +14,30 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-
-from urllib.request import urlretrieve
+from urllib.request import urlopen
+from urllib.parse import urlsplit
 
 # Remebers if file is already written
-DOWNLOADED = {}
+DOWNLOADED = []
 
 
 def download(url, destination):
     """ download the file if not downloaded before """
     if destination not in DOWNLOADED:
-        urlretrieve(url, destination)
-        DOWNLOADED[destination] = True
+        with urlopen(url, timeout=30.0) as remote:
+            # get filename
+            filename = None
+            if 'Content-Disposition' in remote.info():
+                filename = remote.info()['Content-Disposition']
+            else:
+                filename = urlsplit(url)[2]
+
+            # extract extension from filename
+            extension = filename.split('.')[-1]
+
+            # download the file
+            with open("{0}.{1}".format(destination, extension), 'wb') as local:
+                local.write(remote.read())
+
+            # remember it
+            DOWNLOADED.append(destination)

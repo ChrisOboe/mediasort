@@ -17,18 +17,19 @@
 
 """ some enums used everywhere in the programm """
 
-from mediasort.mediatypes import movie, episode, tvshow, season
+from enum import Enum
+from mediasort.mediatypes import movie, tvshow, season, episode
 
 
-class PluginType():
+class PluginType(Enum):
     guess = "guess"
     identificator = "identificator"
     metadata = "metadata"
     images = "images"
 
 
-class MediaType():
-    movie = movie
-    tvshow = tvshow
-    season = season
-    episode = episode
+class MediaType(Enum):
+    movie = movie.movie
+    tvshow = tvshow.tvshow
+    season = season.season
+    episode = episode.episode

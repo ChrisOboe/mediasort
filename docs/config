@@ -1,31 +1,58 @@
 ---
 
-videofile:
-	minimal_file_size: bla
+files:
+	minimal_file_size: 300
+  allowed_extensions: ['mkv', 'avi']
 
 tmdb:
-	api_key: bla
-	cachefile: bla
-	cache_validity: bla
-  certification_language: bla
-	https_download: true
+	api_key: bd65f46c799046c2d4286966d76c37c6
+	cache_validity: 7
+  use_https: true
+  certification_country: us
+  sizes:
+    poster: w500
+    background: w1280
+    thumbnail: w300
+
+fanarttv:
+  api_key: 975772e71680c85fc2944ca0492c691f
 
 paths:
-	movie:
-    template: bla
-    nfo: bla
-		media: bla
-		poster: bla
-		background:
-		disc:
-		banner:
-		logo:
-		clearart:
-		art:
+  movie:
+    template: templates/movie/kodi-nfo
+    base: /var/lib/media/movies/${title}/
+    nfo: ${title} (${premiered}).nfo
+		media: ${title} (${premiered})
+		poster: poster
+		background: fanart
+		disc: disc
+		banner: banner
+		logo: logo
+		clearart: clearart
+		art: art
+  episode:
+    template: templates/episode/kodi-nfo
+    base: /var/lib/media/tvshows/${showtitle} (${premiered})/Season${season}/
+    nfo: S${season}E${episode} ${title}.nfo
+    media: S${season}E${episode} ${title}
+    thumbnail: S${season}E${episode} ${title}
+  season:
+    base: /var/lib/media/tvshows/${showtitle} (${premiered})/
+    poster: Season${season}
+  tvshow:
+    template: templates/tvshow/kodi-nfo
+    base: /var/lib/media/tvshows/${showtitle} (${premiered})/
+    poster: poster
+    background: fanart
+    banner: banner
+    logo: logo
+    charart: charart
+    clearart: clearart
+    art: art
 
 languages:
-  metadata: []
-  images: []
+  metadata: ['en']
+  images: ['en']
 
 providers:
 	guess: ["nfo", "filename"]
@@ -50,7 +77,7 @@ providers:
 			directors: ["tmdb"]
 			actors: ["tmdb"]
 		tvshow:
-			title: ["tmdb"]
+			showtitle: ["tmdb"]
 			premiered: ["tmdb"]
 			plot: ["tmdb"]
 			certification: ["tmdb"]
@@ -60,6 +87,7 @@ providers:
 			genres: ["tmdb"]
 			actors: ["tmdb"]
 		episode:
+			showtitle: ["tmdb"]
 			title: ["tmdb"]
 			premiered: ["tmdb"]
 			plot: ["tmdb"]

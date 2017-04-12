@@ -19,6 +19,9 @@
 import urllib
 import json
 
+from mediasort.enums import MediaType
+from mediasort import error
+
 FANARTTV_BASE_URL = "http://webservice.fanart.tv/v3"
 
 MOVIE_IMAGE_TYPES = {'logo':       ['hdmovielogo', 'movielogo'],
@@ -37,104 +40,73 @@ TVSHOW_IMAGE_TYPES = {'logo':       ['hdtvlogo', 'tvlogo'],
                       'banner':     ['tvbanner'],
                       'art':        ['tvthumb']}
 
-API_KEY = None
-IMAGE_CACHE = {}
+CONFIG = {}
+CACHE = {}
 
 
-def clean_cache():
-    """ cleans the fanart.tv cache """
-    IMAGE_CACHE.clear()
-
-
-def init(settings):
-    """ sets the fanart.tv api key """
-    global API_KEY
-    API_KEY = settings['api_key']
-
-
-def get_movie_image_types():
-    """ returns the availabel image types """
-    return MOVIE_IMAGE_TYPES.keys()
-
-
-def get_tvshow_image_types():
-    """ returns the availabel image types """
-    return TVSHOW_IMAGE_TYPES.keys()
-
-
-def get_episode_image_types():
-    """ returns the available images types """
-    return None
-
-
-def get_images(mid, category):
+# INTERNAL
+def get_images(_id, category):
     """ gets the answer from fanart.tv and caches it """
 
-    if mid in IMAGE_CACHE:
-        return IMAGE_CACHE[mid]
+    if _id in CACHE:
+        return CACHE[_id]
 
     request = urllib.request.Request(
         FANARTTV_BASE_URL + "/"
         + category + "/"
-        + str(mid)
-        + "?api_key=" + API_KEY)
-
-    # print(FANARTTV_BASE_URL + "/"
-    #      + category + "/"
-    #      + str(mid)
-    #      + "?api_key=" + API_KEY)
+        + str(_id)
+        + "?api_key=" + CONFIG['key'])
 
     try:
         response = urllib.request.urlopen(request)
-        IMAGE_CACHE[mid] = json.loads(
+        CACHE[_id] = json.loads(
             response.read().decode(response.headers.get_content_charset()))
     except urllib.error.HTTPError:
-        IMAGE_CACHE[mid] = None
+        CACHE[_id] = []
 
-    return IMAGE_CACHE[mid]
+    return CACHE[_id]
 
 
-def get_movie_image_url(ids, image_type, languages):
+# MODULE
+def init(fanarttvconfig):
+    """ sets the fanart.tv api key """
+    global CONFIG
+    CONFIG['key'] = fanarttvconfig['api_key']
+
+
+def get_needed_ids(mediatype):
+    if mediatype == MediaType.movie.name:
+        return ['tmdb']
+    elif mediatype == MediaType.tvshow.name:
+        return ['tvdb']
+    elif mediatype == MediaType.episode.name:
+        return ['tvdb']
+
+
+# IMAGES
+def get_image(identificator, imagetype, language):
     """ returns the url of an specified image """
-    if image_type not in MOVIE_IMAGE_TYPES:
-        return None
 
-    # TODO enable a nolanguage config
-    # fanarttv specific for no language, we hardcode it as position 1
-    fa_languages = list(languages)
-    fa_languages.insert(1, "00")
-    for language in fa_languages:
-        for fa_image_type in MOVIE_IMAGE_TYPES[image_type]:
-            if get_images(ids["tmdb"], 'movies') is None or \
-               fa_image_type not in get_images(ids["tmdb"], 'movies'):
-                continue
-            for image in get_images(ids["tmdb"], 'movies')[fa_image_type]:
-                if image['lang'] == language:
+    imagetypes = None
+    category = None
+    _id = None
+
+    if identificator['type'] == MediaType.movie:
+        imagetypes = MOVIE_IMAGE_TYPES
+        category = 'movies'
+        _id = identificator['tmdb']
+    elif identificator['type'] == MediaType.tvshow:
+        imagetypes = TVSHOW_IMAGE_TYPES
+        category = 'tv'
+        _id = identificator['tvdb']
+    else:
+        raise error.InvalidMediaType
+
+    for fanarttype in imagetypes[imagetype]:
+        images = get_images(_id, category)
+        if fanarttype in images:
+            for image in images[fanarttype]:
+                if image['lang'] == language or image['lang'] == "00":
                     return image['url']
 
     return None
-
-
-def get_tvshow_image_url(ids, image_type, languages):
-    """ returns the url of an specified image """
-    if image_type not in TVSHOW_IMAGE_TYPES:
-        raise LookupError("fanart.tv doesn't support {0}"
-                          .format(image_type))
-
-    if get_images(ids["tvdb"], 'tv') is None:
-        raise LookupError("fanart.tv doesn't support this tvshow")
-
-    # TODO enable a nolanguage config
-    # fanarttv specific for no language, we hardcode it as position 1
-    fa_languages = list(languages)
-    fa_languages.insert(1, "00")
-    for language in fa_languages:
-        for fa_image_type in TVSHOW_IMAGE_TYPES[image_type]:
-            if fa_image_type not in get_images(ids["tvdb"], 'tv'):
-                continue
-            for image in get_images(ids["tvdb"], 'tv')[fa_image_type]:
-                if image['lang'] == language:
-                    return image['url']
-
-    # raise LookupError("No images for the languages {0} in type {1} found"
-    #                  .format(languages, image_type))

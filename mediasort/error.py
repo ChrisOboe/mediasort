@@ -25,6 +25,11 @@ class InvalidPlugin(Exception):
     pass
 
 
+class InternalError(Exception):
+    """ Should be raised when this error should never happen"""
+    pass
+
+
 class NotEnoughData(Exception):
     """ Should be raised when a needet value is missing """
     pass

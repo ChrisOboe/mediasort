@@ -14,25 +14,25 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+from enum import Enum
 
-class Movie():
+
+class tvshow(Enum):
+    neededGuess = []
+
     idTypes = {
         'tmdb': "tmdb",
         'imdb': "imdb",
     }
 
     metadataTypes = {
-        'title': "title",
-        'originaltitle': "originaltitle",
+        'showtitle': "showtitle",
         'premiered': "premiered",
-        'tagline': "tagline",
         'plot': "plot",
-        'set': "set",
         'certification': "certification",
         'rating': "rating",
         'votes': "votes",
         'studios': "studios",
-        'countries': "countries",
         'genres': "genres",
         'directors': "directors",
         'writers': "writers",
@@ -42,9 +42,9 @@ class Movie():
     imageTypes = {
         'poster': "poster",
         'background': "background",
-        'disc': "disc",
         'banner': "banner",
         'logo': "logo",
+        'charart': "charart",
         'clearart': "clearart",
         'art': "art",
     }
