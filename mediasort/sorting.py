@@ -26,9 +26,7 @@ from mediasort.download import download
 
 
 # create logger
-logging.basicConfig()
 logger = logging.getLogger('mediasort')
-logger.setLevel(logging.DEBUG)
 
 
 # helpers
@@ -61,7 +59,7 @@ def get_guess(filepath, providers):
         logger.debug("Using {0} to guess from file".format(provider.__name__))
         try:
             guess.update(provider.get_guess(filepath))
-        except (error.NotEnoughData):
+        except error.NotEnoughData:
             logger.debug("{0} didn't got anything".format(provider.__name__))
             pass
 
@@ -74,6 +72,7 @@ def get_guess(filepath, providers):
     if not contains_elements(needed, guess):
         raise error.NotEnoughData("Needed value couldn't be guessed")
 
+    logger.debug("Guessed as {0}".format(guess['type'].name))
     return guess
 
 
@@ -112,12 +111,12 @@ def get_metadata(identificator, languages, providers):
     for metadatatype in metadata:
         for language in languages:
             for provider in providers[metadatatype]:
-                logger.debug("Using {0}/{2} to get {1}".format(
-                    provider.__name__,
-                    metadatatype,
-                    language
-                ))
                 if metadata[metadatatype] is None:
+                    logger.debug("Using {0}/{2} to get {1}".format(
+                        provider.__name__,
+                        metadatatype,
+                        language
+                    ))
                     metadata[metadatatype] = provider.get_metadata(
                         identificator,
                         metadatatype,
@@ -137,12 +136,12 @@ def get_images(identificator, languages, providers):
     for imagetype in images:
         for language in languages:
             for provider in providers[imagetype]:
-                logger.debug("Using {0}/{2} to get {1}".format(
-                    provider.__name__,
-                    imagetype,
-                    language
-                ))
                 if images[imagetype] is None:
+                    logger.debug("Using {0}/{2} to get {1}".format(
+                        provider.__name__,
+                        imagetype,
+                        language
+                    ))
                     images[imagetype] = provider.get_image(
                         identificator,
                         imagetype,
@@ -194,13 +193,21 @@ def sort(videofile, plugins, ids, paths, languages, overwrite=False,
     if not callbacks:
         callbacks = {}
 
-    logger.info("\nProcessing \"{0}\"".format(videofile['abspath']))
+    logger.info("Processing \"{0}\"".format(videofile['abspath']))
 
-    guess = get_guess(videofile['abspath'], plugins[PluginType.guess.name])
-    identificator = get_identificator(guess,
-                                      plugins[PluginType.identificator.name],
-                                      ids,
-                                      callbacks.get('identificator'))
+    try:
+        guess = get_guess(videofile['abspath'], plugins[PluginType.guess.name])
+        identificator = get_identificator(guess,
+                                          plugins[PluginType.identificator.name],
+                                          ids,
+                                          callbacks.get('identificator'))
+    except error.NotEnoughData as e:
+        logger.error(str(e))
+        logger.debug("---- Cut here ----\n")
+        return None
+    except error.CallbackBreak:
+        logger.debug("---- Cut here ----\n")
+        return None
 
     metadata = get_metadata(
         identificator,
@@ -211,8 +218,9 @@ def sort(videofile, plugins, ids, paths, languages, overwrite=False,
     # get paths
     try:
         rendered_paths = get_paths(paths[identificator['type'].name], metadata)
-    except PermissionError as error:
-        logger.error("You don't have needed permissions: {0}".format(error))
+    except PermissionError as e:
+        logger.error("You don't have needed permissions: {0}".format(e))
+        logger.debug("---- Cut here ----\n")
         return None
 
     # create base path
@@ -222,17 +230,18 @@ def sort(videofile, plugins, ids, paths, languages, overwrite=False,
     try:
         meta_sort(guess, identificator, metadata, plugins, rendered_paths,
                   languages, overwrite)
-    except FileNotFoundError as error:
-        logger.error("A needed file wasn't found: {0}".format(error))
+    except FileNotFoundError as e:
+        logger.error("A needed file wasn't found: {0}".format(e))
+        logger.debug("---- Cut here ----\n")
         return None
 
     # move the media
     if overwrite['media'] or not os.path.isfile(rendered_paths['media']):
         logger.debug("Moving media to " + rendered_paths['media'])
-        #move(
-        #    videofile['abspath'],
-        #    "{0}.{1}".format(rendered_paths['media'], videofile['extension'])
-        #)
+        move(
+            videofile['abspath'],
+            "{0}.{1}".format(rendered_paths['media'], videofile['extension'])
+        )
 
     # sort successors
     if hasattr(identificator['type'], 'successors'):
@@ -246,3 +255,5 @@ def sort(videofile, plugins, ids, paths, languages, overwrite=False,
                                  metadata)
             meta_sort(guess, newIdentificator, newMetadata, plugins, newPaths,
                       languages, overwrite)
+
+    logger.debug("---- Cut here ----\n")

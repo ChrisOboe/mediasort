@@ -101,17 +101,31 @@ def get_identificator(guess, identificator, callback):
     """ returns ids for the guessed videofile """
 
     # get tmdb id from imdb
-    if identificator['imdb']:
-        info = tmdbsimple.find().info(
-            external_sources={'imdb_id': identificator['imdb']})
+    if guess['type'] == MediaType.movie and identificator['imdb']:
+        info = tmdbsimple.Find(
+            identificator['imdb']
+        ).info(external_source='imdb_id')
 
         if guess['type'] == MediaType.movie:
             identificator['tmdb'] = info['movie_results'][0]['id']
+            identificator['tmdb'] = callback(
+                [{'title': info['movie_results'][0]['title'],
+                 'description': info['movie_results'][0]['overview'],
+                 'id': info['movie_results'][0]['id']}],
+                guess['type'].name
+            )
 
         elif guess['type'] == MediaType.episode:
             identificator['tmdb'] = info['tv_results'][0]['id']
             tvshow = tmdbsimple.TV(identificator['tmdb']).external_ids()
             identificator['tvdb'] = tvshow['tvdb_id']
+            identificator['tmdb'] = callback(
+                [{'title': info['tv_results'][0]['title'],
+                 'description': info['tv_results'][0]['overview'],
+                 'id': info['tv_results'][0]['id']}],
+                guess['type'].name
+            )
+
 
     # get tmdb id from title
     if not identificator['tmdb']:
@@ -127,7 +141,7 @@ def get_identificator(guess, identificator, callback):
         if not search.results:
             raise error.NotEnoughData("TMDb search didn't found anything.")
 
-        if len(search.results) == 1 or callback is None:
+        if callback is None:
             identificator['tmdb'] = search.results[0]['id']
         else:
             # call callback function
@@ -361,26 +375,25 @@ def get_movie_image(identificator, imagetype, language):
 
     # use value from cache if cache exists
     if movie_cache:
-        return movie_cache[imagetype]
+        return movie_cache.get(imagetype)
 
     movie = tmdbsimple.Movies(identificator['tmdb']).info(
         language=language
     )
 
-    images = {
-        'poster':
-        CONFIG['base_url'] +
-        CONFIG['poster_size'] +
-        movie['poster_path'],
+    images = {}
+    if movie['poster_path']:
+        images['poster'] = CONFIG['base_url'] + \
+                           CONFIG['poster_size'] + \
+                           movie['poster_path']
 
-        'background':
-        CONFIG['base_url'] +
-        CONFIG['background_size'] +
-        movie['backdrop_path']
-    }
+    if movie['backdrop_path']:
+        images['background'] = CONFIG['base_url'] + \
+                               CONFIG['background_size'] + \
+                               movie['backdrop_path']
 
     CACHE['images']['movie'][identificator['tmdb']] = images
-    return images[imagetype]
+    return images.get(imagetype)
 
 
 def get_tvshow_image(identificator, imagetype, language):
@@ -392,7 +405,7 @@ def get_tvshow_image(identificator, imagetype, language):
         tvshow_cache = None
 
     if tvshow_cache:
-        return tvshow_cache[imagetype]
+        return tvshow_cache.get(imagetype)
 
     tvshow = tmdbsimple.TV(identificator['tmdb']).info(
         language=language,
@@ -400,20 +413,19 @@ def get_tvshow_image(identificator, imagetype, language):
         append_to_response='images'
     )
 
-    images = {
-        'poster':
-        CONFIG['base_url'] +
-        CONFIG['poster_size'] +
-        tvshow['images']['posters'][0]['file_path'],
+    images = {}
+    if tvshow['images']['posters']:
+        images['poster'] = CONFIG['base_url'] + \
+                           CONFIG['poster_size'] + \
+                           tvshow['images']['posters'][0]['file_path']
 
-        'background':
-        CONFIG['base_url'] +
-        CONFIG['background_size'] +
-        tvshow['images']['backdrops'][0]['file_path'],
-    }
+    if tvshow['images']['backdrops']:
+        images['background'] = CONFIG['base_url'] + \
+                               CONFIG['background_size'] + \
+                               tvshow['images']['backdrops'][0]['file_path']
 
     CACHE['images']['tvshow'][identificator['tmdb']] = images
-    return images[imagetype]
+    return images.get(imagetype)
 
 
 def get_season_image(identificator, imagetype, language):
@@ -425,7 +437,7 @@ def get_season_image(identificator, imagetype, language):
         season_cache = None
 
     if season_cache:
-        return season_cache[imagetype]
+        return season_cache.get(imagetype)
 
     season = tmdbsimple.TV_Seasons(
         identificator['tmdb'],
@@ -435,15 +447,14 @@ def get_season_image(identificator, imagetype, language):
         include_image_language="null"
     )
 
-    images = {
-        'poster':
-        CONFIG['base_url'] +
-        CONFIG['poster_size'] +
-        season['posters'][0]['file_path'],
-    }
+    images = {}
+    if season['posters']:
+        images['poster'] = CONFIG['base_url'] + \
+                           CONFIG['poster_size'] + \
+                           season['posters'][0]['file_path']
 
     CACHE['images']['season'][identificator['tmdb']][identificator['season']] = images
-    return images['imagetype']
+    return images.get(imagetype)
 
 
 def get_episode_image(identificator, imagetype, language):

@@ -49,10 +49,14 @@ def get_guess(filepath):
 
     if root.tag == "movie":
         guess["type"] = MediaType.movie
-        guess["title"] = root.find("title").text
+        entry = root.find('title')
+        if entry is not None:
+            guess['title'] = entry.text
     elif root.tag == "episodedetails":
         guess["type"] = MediaType.episode
-        guess["title"] = root.find("showtitle").text
+        entry = root.find('showtitle')
+        if entry is not None:
+            guess['title'] = entry.text
 
     wanted = ["releasegroup", "source", "episode", "season"]
     for i in wanted:
@@ -82,5 +86,7 @@ def get_identificator(guess, identificator, callback):
                     break
     except FileNotFoundError:
         raise error.NotEnoughData("nfo not found")
+    except UnicodeDecodeError:
+        raise error.NotEnoughData("Invalid char in nfo")
 
     return identificator

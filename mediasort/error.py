@@ -38,3 +38,8 @@ class NotEnoughData(Exception):
 class InvalidMediaType(Exception):
     """ Should be raised when a mediatype is not supportet """
     pass
+
+
+class CallbackBreak(Exception):
+    """ Should be raised when the callback function should stop something """
+    pass

@@ -16,6 +16,18 @@
 
 from mako.template import Template
 
+INVALID_CHARS = "?<>:*|\""
+
+
+def get_filename_string(string):
+    result = ''
+    for char in string:
+        if char in INVALID_CHARS:
+            result += '_'
+        else:
+            result += char
+    return result.strip()
+
 
 def get_paths(paths, metadata):
     outpaths = {}
@@ -27,6 +39,7 @@ def get_paths(paths, metadata):
             outpaths[path] += Template(paths[path]).render_unicode(**metadata)
         elif path == 'base':
             outpaths[path] = Template(paths[path]).render_unicode(**metadata)
+        outpaths[path] = get_filename_string(outpaths[path])
 
     return outpaths
 

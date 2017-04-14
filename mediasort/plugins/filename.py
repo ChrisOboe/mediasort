@@ -16,12 +16,16 @@
 
 """ provides guesses from filename """
 
+import logging
 from datetime import datetime
 
 from guessit import guessit
 
 from mediasort import error
 from mediasort.enums import MediaType
+
+# create logger
+logger = logging.getLogger('mediasort')
 
 
 def init(config):
@@ -39,6 +43,7 @@ def get_guess(filepath):
 
     if "title" in nameguess:
         guess["title"] = nameguess["title"]
+        logger.debug("Guessed title: {0}".format(guess['title']))
 
     if nameguess["type"] == "movie":
         guess["type"] = MediaType.movie
