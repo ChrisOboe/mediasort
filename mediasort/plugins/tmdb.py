@@ -100,7 +100,17 @@ def init(tmdbconfig):
 def get_identificator(guess, identificator, callback):
     """ returns ids for the guessed videofile """
 
-    # get tmdb id from imdb
+    # get episode and season from guessed
+    if guess['type'] == MediaType.episode or \
+       guess['type'] == MediaType.season:
+        if not identificator['season']:
+            identificator['season'] = guess['season']
+
+    if guess['type'] == MediaType.episode and \
+       not identificator['episode']:
+        identificator['episode'] = guess['episode']
+
+    # get tmdb id from imdb id
     if guess['type'] == MediaType.movie and identificator['imdb']:
         info = tmdbsimple.Find(
             identificator['imdb']
@@ -110,8 +120,8 @@ def get_identificator(guess, identificator, callback):
             identificator['tmdb'] = info['movie_results'][0]['id']
             identificator['tmdb'] = callback(
                 [{'title': info['movie_results'][0]['title'],
-                 'description': info['movie_results'][0]['overview'],
-                 'id': info['movie_results'][0]['id']}],
+                  'description': info['movie_results'][0]['overview'],
+                  'id': info['movie_results'][0]['id']}],
                 guess['type'].name
             )
 
@@ -120,12 +130,11 @@ def get_identificator(guess, identificator, callback):
             tvshow = tmdbsimple.TV(identificator['tmdb']).external_ids()
             identificator['tvdb'] = tvshow['tvdb_id']
             identificator['tmdb'] = callback(
-                [{'title': info['tv_results'][0]['title'],
-                 'description': info['tv_results'][0]['overview'],
-                 'id': info['tv_results'][0]['id']}],
+                [{'title': info['tv_results'][0]['name'],
+                  'description': info['tv_results'][0]['overview'],
+                  'id': info['tv_results'][0]['id']}],
                 guess['type'].name
             )
-
 
     # get tmdb id from title
     if not identificator['tmdb']:
@@ -147,11 +156,20 @@ def get_identificator(guess, identificator, callback):
             # call callback function
             callback_list = []
             for result in search.results:
-                callback_list.append(
-                    {'title': "{0} ({1})".format(result['title'], result['release_date']),
-                     'descprition': result['overview'],
-                     'id': result['id']}
-                )
+                if guess['type'] == MediaType.movie:
+                    callback_list.append(
+                        {'title': "{0} ({1})".format(result['title'], result['release_date']),
+                         'descprition': result['overview'],
+                         'id': result['id']}
+                    )
+                elif guess['type'] == MediaType.episode or \
+                     guess['type'] == MediaType.tvshow or \
+                     guess['type'] == MediaType.season:
+                    callback_list.append(
+                        {'title': result['name'],
+                         'descprition': result['overview'],
+                         'id': result['id']}
+                    )
             identificator['tmdb'] = callback(callback_list,
                                              guess['type'].name)
 
@@ -289,9 +307,9 @@ def get_tvshow_metadata(identificator, metadatatype, language):
         'votes': tvshow.get('vote_count'),
     }
 
-    for rating in tvshow['content_ratings']['results']:
-        if rating['iso_3166_1'] == CONFIG['certification_country']:
-            metadata['certification'] = str(rating['release_dates'][0]['rating'])
+    for certification in tvshow['content_ratings']['results']:
+        if certification['iso_3166_1'] == CONFIG['certification_country']:
+            metadata['certification'] = str(certification['rating'])
 
     metadata['studios'] = []
     for studio in tvshow['networks']:
@@ -330,10 +348,8 @@ def get_episode_metadata(identificator, metadatatype, language):
         identificator['episode']
     ).info(language=language)
 
-    tvshow = get_tvshow_metadata(identificator, metadatatype, language)
-
     metadata = {
-        'showtitle': tvshow.get('showtitle'),
+        'showtitle': get_tvshow_metadata(identificator, 'showtitle', language),
         'title': episode.get('name'),
         'premiered': episode.get('air_date'),
         'plot': episode.get('overview'),
@@ -342,7 +358,15 @@ def get_episode_metadata(identificator, metadatatype, language):
     }
 
     # write metadata to cache
-    CACHE['metadata']['episode'][identificator['tmdb']][identificator['season']][identificator['episode']] = metadata
+    tmdb = identificator['tmdb']
+    episode = identificator['episode']
+    season = identificator['season']
+    if tmdb not in CACHE['metadata']['episode']:
+        CACHE['metadata']['episode'][tmdb] = {}
+    if season not in CACHE['metadata']['episode'][tmdb]:
+        CACHE['metadata']['episode'][tmdb][season] = {}
+
+    CACHE['metadata']['episode'][tmdb][season][episode] = metadata
     return metadata[metadatatype]
 
 

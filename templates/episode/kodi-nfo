@@ -1,24 +1,46 @@
 <episodedetails>
-	<title>${title}</title>
-	<rating>${rating}</rating>
-	<season>${season}</season>
-	<episode>${episode}</episode>
-	<plot>${plot}</plot>
-	<aired>${premiered}</aired>
-	<mpaa>${certification}</mpaa>
-	% for studio in studios:
+  % if metadata['title']:
+	<title>${metadata['title']}</title>
+  % endif
+  % if metadata['rating']:
+	<rating>${metadata['rating']}</rating>
+  % endif
+  % if identificator['season']:
+	<season>${identificator['season']}</season>
+  % endif
+  % if identificator['episode']:
+	<episode>${identificator['episode']}</episode>
+  % endif
+  % if metadata['plot']:
+	<plot>${metadata['plot']}</plot>
+  % endif
+  % if metadata['premiered']:
+	<aired>${metadata['premiered']}</aired>
+  % endif
+  % if metadata['certification']:
+	<mpaa>${metadata['certification']}</mpaa>
+  % endif
+  % if metadata['studios']:
+	  % for studio in metadata['studios']:
 	<studio>${studio}</studio>
-	% endfor
-	% for scriptwriter in scriptwriters:
+    % endfor
+  % endif
+  % if metadata['scriptwriters']:
+	  % for scriptwriter in metadata['scriptwriters']:
 	<credits>${scriptwriter}</credits>
-	% endfor
-	% for director in directors:
-	<director>${director}</director>
-	% endfor
-	% for actor in actors:
+    % endfor
+  % endif
+  % if metadata['directors']:
+	  % for director in metadata['directors']:
+	<director>${'director'}</director>
+    % endfor
+  % endif
+  % if metadata['actors']:
+	  % for actor in metadata['actors']:
 	<actor>
 		<name>${actor['name']}</name>
 		<role>${actor['role']}</role>
 	</actor>
-	% endfor
+    % endfor
+  % endif
 </episodedetails>

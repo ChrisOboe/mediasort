@@ -238,10 +238,10 @@ def sort(videofile, plugins, ids, paths, languages, overwrite=False,
     # move the media
     if overwrite['media'] or not os.path.isfile(rendered_paths['media']):
         logger.debug("Moving media to " + rendered_paths['media'])
-        move(
-            videofile['abspath'],
-            "{0}.{1}".format(rendered_paths['media'], videofile['extension'])
-        )
+        #move(
+        #    videofile['abspath'],
+        #    "{0}.{1}".format(rendered_paths['media'], videofile['extension'])
+        #)
 
     # sort successors
     if hasattr(identificator['type'], 'successors'):
