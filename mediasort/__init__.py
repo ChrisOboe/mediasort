@@ -115,6 +115,11 @@ def initialize_plugins(config):
 
         elif plugintype == PluginType.metadata.name:
             for mediatype in config['plugins'][plugintype]:
+                # check if we have a plugin configured for every metadatatpe
+                for metadatatype in MediaType[mediatype].value.metadataTypes.value:
+                    if metadatatype not in config['plugins'][plugintype][mediatype]:
+                        raise error.InvalidConfig("There is no plugin configured for {1}/{0}".format(metadatatype, mediatype))
+                # load plugins
                 for metadatatype in config['plugins'][plugintype][mediatype]:
                     for plugin in config['plugins'][plugintype][mediatype][metadatatype]:
                         # load the module
@@ -131,6 +136,10 @@ def initialize_plugins(config):
 
         elif plugintype == PluginType.images.name:
             for mediatype in config['plugins'][plugintype]:
+                # check if we have a plugin configured for every metadatatpe
+                for imagetype in MediaType[mediatype].value.imageTypes.value:
+                    if imagetype not in config['plugins'][plugintype][mediatype]:
+                        raise error.InvalidConfig("There is no plugin configured for {1}/{0}".format(metadatatype, imagetype))
                 for imagetype in config['plugins'][plugintype][mediatype]:
                     for plugin in config['plugins'][plugintype][mediatype][imagetype]:
                         # load the module
@@ -148,9 +157,9 @@ def initialize_plugins(config):
     # if we have depending mediatypes (eg season and tvshow depends on episode)
     # we use the ids from the parents
     for mediatype in MediaType:
-        if 'successors' in mediatype.value.__members__:
-            for successor in mediatype.value.successors.value:
-                ids['provided'][successor.__name__] = ids['provided'][mediatype.name]
+        if getattr(mediatype.value, 'get_successors', None) is not None:
+            for successor in mediatype.value.get_successors():
+                ids['provided'][successor.name] = ids['provided'][mediatype.name]
 
     # since the pluginlist is built, we can now do some checks
     for mediatype in MediaType:

@@ -33,9 +33,9 @@ class tvshow(Enum):
         'rating': "rating",
         'votes': "votes",
         'studios': "studios",
+        'networks': "networks",
         'genres': "genres",
-        'directors': "directors",
-        'writers': "writers",
+        'creators': "creators",
         'actors': "actors",
     }
 

@@ -42,7 +42,10 @@ def get_guess(filepath):
     nameguess = guessit(filepath)
 
     if "title" in nameguess:
-        guess["title"] = nameguess["title"]
+        if isinstance(nameguess['title'], list):
+            guess["title"] = nameguess["title"][0]
+        else:
+            guess["title"] = nameguess["title"]
         logger.debug("Guessed title: {0}".format(guess['title']))
 
     if nameguess["type"] == "movie":
@@ -55,7 +58,10 @@ def get_guess(filepath):
         if 'season' not in nameguess:
             raise error.NotEnoughData("No season number found")
         guess["type"] = MediaType.episode
-        guess["episode"] = nameguess["episode"]
+        if isinstance(nameguess['episode'], list):
+            guess["episode"] = nameguess["episode"][0]
+        else:
+            guess["episode"] = nameguess["episode"]
         guess["season"] = nameguess["season"]
 
     if "format" in nameguess:

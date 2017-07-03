@@ -162,7 +162,8 @@ def meta_sort(guess, identificator, metadata, plugins, paths, languages,
     )
 
     # write the nfo
-    if overwrite['nfo'] or not os.path.isfile(paths['nfo']):
+    if ('nfo' in paths and
+        (overwrite['nfo'] or not os.path.isfile(paths['nfo']))):
         logger.debug("Writing " + paths['nfo'])
         write_nfo(paths['template'],
                   {'metadata': metadata,
@@ -201,59 +202,77 @@ def sort(videofile, plugins, ids, paths, languages, overwrite=False,
                                           plugins[PluginType.identificator.name],
                                           ids,
                                           callbacks.get('identificator'))
-    except error.NotEnoughData as e:
+
+        metadata = get_metadata(
+            identificator,
+            languages['metadata'],
+            plugins[PluginType.metadata.name][identificator['type'].name]
+        )
+
+
+        # get paths
+        try:
+            rendered_paths = get_paths(
+                paths[identificator['type'].name],
+                {'metadata': metadata,
+                'identificator': identificator,
+                'guess': guess})
+        except PermissionError as e:
+            logger.error("You don't have needed permissions: {0}".format(e))
+            logger.debug("---- Cut here ----\n")
+            return None
+
+        # create base path
+        os.makedirs(rendered_paths['base'], exist_ok=True)
+
+        # write nfo and download images
+        try:
+            meta_sort(guess, identificator, metadata, plugins, rendered_paths,
+                    languages, overwrite)
+        except FileNotFoundError as e:
+            logger.error("A needed file wasn't found: {0}".format(e))
+            logger.debug("---- Cut here ----\n")
+            return None
+
+        # move the media
+        if overwrite['media'] or not os.path.isfile(rendered_paths['media']):
+            logger.debug("Moving media to " + rendered_paths['media'])
+            move(
+                videofile['abspath'],
+                "{0}.{1}".format(rendered_paths['media'], videofile['extension'])
+            )
+
+        # sort successors
+        if getattr(identificator['type'].value, 'get_successors', None) is not None:
+            for successor in identificator['type'].value.get_successors():
+                logger.debug("Processing depenendency: {0}".format(successor.name))
+
+                newIdentificator = copy.deepcopy(identificator)
+                newIdentificator['type'] = successor
+
+                newMetadata = get_metadata(
+                    newIdentificator,
+                    languages['metadata'],
+                    plugins[PluginType.metadata.name][newIdentificator['type'].name]
+                )
+
+                newPaths = get_paths(
+                    paths[newIdentificator['type'].name],
+                    {'metadata': metadata,
+                    'identificator': newIdentificator}
+                )
+
+                meta_sort(guess,
+                        newIdentificator,
+                        newMetadata,
+                        plugins,
+                        newPaths,
+                        languages,
+                        overwrite)
+
+    except (error.NotEnoughData, error.CallbackBreak) as e:
         logger.error(str(e))
         logger.debug("---- Cut here ----\n")
         return None
-    except error.CallbackBreak:
-        logger.debug("---- Cut here ----\n")
-        return None
-
-    metadata = get_metadata(
-        identificator,
-        languages['metadata'],
-        plugins[PluginType.metadata.name][identificator['type'].name]
-    )
-
-    # get paths
-    try:
-        rendered_paths = get_paths(paths[identificator['type'].name], metadata)
-    except PermissionError as e:
-        logger.error("You don't have needed permissions: {0}".format(e))
-        logger.debug("---- Cut here ----\n")
-        return None
-
-    # create base path
-    os.makedirs(rendered_paths['base'], exist_ok=True)
-
-    # write nfo and download images
-    try:
-        meta_sort(guess, identificator, metadata, plugins, rendered_paths,
-                  languages, overwrite)
-    except FileNotFoundError as e:
-        logger.error("A needed file wasn't found: {0}".format(e))
-        logger.debug("---- Cut here ----\n")
-        return None
-
-    # move the media
-    if overwrite['media'] or not os.path.isfile(rendered_paths['media']):
-        logger.debug("Moving media to " + rendered_paths['media'])
-        #move(
-        #    videofile['abspath'],
-        #    "{0}.{1}".format(rendered_paths['media'], videofile['extension'])
-        #)
-
-    # sort successors
-    if hasattr(identificator['type'], 'successors'):
-        for mediatype in identificator['type'].successors:
-            newIdentificator = copy.deepcopy(identificator)
-            newIdentificator['type'] = mediatype
-            newMetadata = get_metadata(newIdentificator,
-                                    languages['metadata'],
-                                    plugins[PluginType.metadata.name])
-            newPaths = get_paths(paths[newIdentificator['type'].__name__],
-                                 metadata)
-            meta_sort(guess, newIdentificator, newMetadata, plugins, newPaths,
-                      languages, overwrite)
 
     logger.debug("---- Cut here ----\n")

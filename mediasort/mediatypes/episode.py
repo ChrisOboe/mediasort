@@ -17,10 +17,12 @@
 from enum import Enum
 from mediasort.mediatypes import season, tvshow
 
-
 class episode(Enum):
     neededGuess = ['title', 'season', 'episode']
-    successors = [season.season, tvshow.tvshow]
+
+    def get_successors():
+        from mediasort.enums import MediaType
+        return [MediaType.tvshow, MediaType.season]
 
     idTypes = {
         'tmdb': "tmdb",
@@ -33,9 +35,16 @@ class episode(Enum):
         'title': "title",
         'showtitle': "showtitle",
         'premiered': "premiered",
+        'show_premiered': "show_premiered",
         'plot': "plot",
         'rating': "rating",
         'votes': "votes",
+        'studios': "studios",
+        'networks': "networks",
+        'directors': "directors",
+        'scriptwriters': "scriptwriters",
+        'actors': "actors",
+        'certification': "certification"
     }
 
     imageTypes = {

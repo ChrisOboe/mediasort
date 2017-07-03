@@ -19,6 +19,7 @@
 import os
 import datetime
 import json
+import requests
 from collections import defaultdict
 import dateutil.parser
 import tmdbsimple
@@ -307,13 +308,22 @@ def get_tvshow_metadata(identificator, metadatatype, language):
         'votes': tvshow.get('vote_count'),
     }
 
+    metadata['certification'] = None
     for certification in tvshow['content_ratings']['results']:
         if certification['iso_3166_1'] == CONFIG['certification_country']:
             metadata['certification'] = str(certification['rating'])
 
+    metadata['creators'] = []
+    for creator in tvshow['created_by']:
+        metadata['creators'].append(creator['name'])
+
     metadata['studios'] = []
-    for studio in tvshow['networks']:
+    for studio in tvshow['production_companies']:
         metadata['studios'].append(studio['name'])
+
+    metadata['networks'] = []
+    for network in tvshow['networks']:
+        metadata['networks'].append(network['name'])
 
     metadata['genres'] = []
     for genre in tvshow['genres']:
@@ -342,20 +352,46 @@ def get_episode_metadata(identificator, metadatatype, language):
     if episode_cache:
         return episode_cache[metadatatype]
 
-    episode = tmdbsimple.TV_Episodes(
-        identificator['tmdb'],
-        identificator['season'],
-        identificator['episode']
-    ).info(language=language)
+    try:
+        episode = tmdbsimple.TV_Episodes(
+            identificator['tmdb'],
+            identificator['season'],
+            identificator['episode']
+        ).info(language=language)
+    except requests.exceptions.HTTPError:
+        raise error.NotEnoughData("Problem with accessing TMDb")
 
     metadata = {
         'showtitle': get_tvshow_metadata(identificator, 'showtitle', language),
         'title': episode.get('name'),
         'premiered': episode.get('air_date'),
+        'show_premiered': get_tvshow_metadata(identificator, 'premiered', language),
         'plot': episode.get('overview'),
         'rating': episode.get('vote_average'),
         'votes': episode.get('vote_count'),
+        'studios': get_tvshow_metadata(identificator, 'studios', language),
+        'networks': get_tvshow_metadata(identificator, 'networks', language),
+        'certification': get_tvshow_metadata(identificator, 'certification', language),
     }
+
+    metadata['directors'] = []
+    metadata['scriptwriters'] = []
+
+    if 'crew' in episode:
+        for crewmember in episode['crew']:
+            if crewmember['job'] == 'Director':
+                metadata['directors'].append(crewmember['name'])
+            elif crewmember['job'] == 'Writer':
+                metadata['scriptwriters'].append(crewmember['name'])
+
+    metadata['actors'] = get_tvshow_metadata(identificator, 'actors', language)
+    if 'guest_stars' in episode:
+        for guest_star in episode['guest_stars']:
+            if guest_star['character']:
+                metadata['actors'].append(
+                    {'name': guest_star['name'],
+                     'role': guest_star['character']})
+
 
     # write metadata to cache
     tmdb = identificator['tmdb']
@@ -367,6 +403,7 @@ def get_episode_metadata(identificator, metadatatype, language):
         CACHE['metadata']['episode'][tmdb][season] = {}
 
     CACHE['metadata']['episode'][tmdb][season][episode] = metadata
+
     return metadata[metadatatype]
 
 
@@ -468,7 +505,7 @@ def get_season_image(identificator, imagetype, language):
         identificator['season']
     ).images(
         language=language,
-        include_image_language="null"
+        #include_image_language="null" #bug in tmdb
     )
 
     images = {}
@@ -477,7 +514,12 @@ def get_season_image(identificator, imagetype, language):
                            CONFIG['poster_size'] + \
                            season['posters'][0]['file_path']
 
-    CACHE['images']['season'][identificator['tmdb']][identificator['season']] = images
+    tmdb = identificator['tmdb']
+    season = identificator['season']
+    if tmdb not in CACHE['images']['season']:
+        CACHE['images']['season'][tmdb] = {}
+
+    CACHE['images']['season'][tmdb][season] = images
     return images.get(imagetype)
 
 
@@ -498,12 +540,23 @@ def get_episode_image(identificator, imagetype, language):
         identificator['episode']
     ).info(language=language)
 
-    images = {
-        'thumbnail':
-        CONFIG['base_url'] +
-        CONFIG['thumbnail_size'] +
-        episode['still_path']
-    }
+    if episode['still_path']:
+        images = {
+            'thumbnail':
+            CONFIG['base_url'] +
+            CONFIG['thumbnail_size'] +
+            episode['still_path']
+        }
+    else:
+        images = {'thumbnail': None}
 
-    CACHE['images']['episode'][identificator['tmdb']][identificator['season']][identificator['episode']] = images
+    tmdb = identificator['tmdb']
+    episode = identificator['episode']
+    season = identificator['season']
+    if tmdb not in CACHE['images']['episode']:
+        CACHE['images']['episode'][tmdb] = {}
+    if season not in CACHE['images']['episode'][tmdb]:
+        CACHE['images']['episode'][tmdb][season] = {}
+
+    CACHE['images']['episode'][tmdb][season][episode] = images
     return images[imagetype]

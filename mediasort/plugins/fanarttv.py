@@ -61,7 +61,7 @@ def get_images(_id, category):
         response = urllib.request.urlopen(request)
         CACHE[_id] = json.loads(
             response.read().decode(response.headers.get_content_charset()))
-    except urllib.error.HTTPError:
+    except (urllib.error.HTTPError, urllib.error.URLError, ConnectionResetError):
         CACHE[_id] = []
 
     return CACHE[_id]
