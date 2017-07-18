@@ -151,7 +151,7 @@ def get_identificator(guess, identificator, callback):
         if not search.results:
             raise error.NotEnoughData("TMDb search didn't found anything.")
 
-        if callback is None:
+        if callback is None and len(search.results) == 1:
             identificator['tmdb'] = search.results[0]['id']
         else:
             # call callback function
