@@ -9,18 +9,19 @@ def readme():
 
 setup(
     name='mediasort',
-    version='0.7.0',
+    version='0.7.1',
     author='Chris Oboe',
     author_email='chrisoboe@eml.cc',
     description='A library for automaticly sorting movies and episodes',
     license='GPLv3+',
     url='https://github.com/ChrisOboe/mediasort',
-    download_url='https://github.com/ChrisOboe/mediasort/archive/v0.7.0.tar.gz',
+    download_url='https://github.com/ChrisOboe/mediasort/archive/v0.7.1.tar.gz',
     packages=['mediasort'],
     install_requires=[
         'python-dateutil',
         'tmdbsimple',
-        'guessit'
+        'guessit>=2',
+        'Mako',
     ],
     classifiers = [
         "Development Status :: 4 - Beta",
