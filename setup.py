@@ -15,8 +15,8 @@ setup(
     description='A library for automaticly sorting movies and episodes',
     license='GPLv3+',
     url='https://github.com/ChrisOboe/mediasort',
-    download_url='https://github.com/ChrisOboe/mediasort/archive/v0.7.1.tar.gz',
-    packages=['mediasort'],
+    download_url='https://github.com/ChrisOboe/mediasort/archive/0.7.1.tar.gz',
+    packages=['mediasort', 'mediasort.plugins', 'mediasort.mediatypes'],
     install_requires=[
         'python-dateutil',
         'tmdbsimple',
@@ -24,7 +24,7 @@ setup(
         'Mako',
     ],
     classifiers = [
-        "Development Status :: 4 - Beta",
+        "Development Status :: 3 - Alpha",
         "Intended Audience :: Developers",
         "Operating System :: OS Independent",
         "Programming Language :: Python :: 3.5",
