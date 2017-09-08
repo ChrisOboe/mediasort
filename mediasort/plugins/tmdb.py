@@ -64,6 +64,7 @@ def init(tmdbconfig):
     CONFIG['background_size'] = tmdbconfig['sizes']['background']
     CONFIG['thumbnail_size'] = tmdbconfig['sizes']['thumbnail']
     CONFIG['certification_country'] = tmdbconfig['certification_country'].upper()
+    CONFIG['search_language'] = tmdbconfig['search_language'].upper()
 
     # if cachefile doesnt exist download the data
     if not os.path.exists(CACHEFILE):
@@ -139,7 +140,7 @@ def get_identificator(guess, identificator, callback):
 
     # get tmdb id from title
     if not identificator['tmdb']:
-        args = {'query': guess['title']}
+        args = {'query': guess['title'], 'language': CONFIG['search_language']}
         if guess['type'] == MediaType.movie and guess['year']:
             args['year'] = guess['year']
         search = tmdbsimple.Search()
@@ -158,8 +159,11 @@ def get_identificator(guess, identificator, callback):
             callback_list = []
             for result in search.results:
                 if guess['type'] == MediaType.movie:
+                    movie = tmdbsimple.Movies(result['id']).info(
+                        language=CONFIG['search_language'])
+
                     callback_list.append(
-                        {'title': "{0} ({1})".format(result['title'], result['release_date']),
+                        {'title': "{0} ({1})".format(movie['title'], movie['release_date']),
                          'descprition': result['overview'],
                          'id': result['id']}
                     )
