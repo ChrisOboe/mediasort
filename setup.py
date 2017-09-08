@@ -22,6 +22,7 @@ setup(
         'tmdbsimple',
         'guessit>=2',
         'Mako',
+        'fuzzywuzzy',
     ],
     classifiers = [
         "Development Status :: 3 - Alpha",

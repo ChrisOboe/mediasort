@@ -18,6 +18,7 @@ import os
 import copy
 from shutil import move
 import logging
+from fuzzywuzzy import fuzz
 
 from mediasort import error
 from mediasort.enums import PluginType
@@ -78,6 +79,30 @@ def get_guess(filepath, providers):
 
 def get_identificator(guess, providers, ids, callback):
     """ returns a identificator for a guess """
+
+    def custom_sort(identificator_list, medianame):
+        """ sometimes the identificator sorting sucks hard (tmdbs search is
+        the hell) we use fuzzymatching to get the best result"""
+
+        logger.debug("Using internal Fuzzer for best selection")
+
+        best_match = {'entry': None,
+                      'score': 0}
+        for entry in identificator_list:
+            score = fuzz.ratio(
+                "{0} ({1})".format(guess['title'], guess['year']),
+                entry['title'])
+            logger.debug("Fuzzying \"{0}\" score: {1}".format(entry['title'],
+                                                          score))
+            if score > best_match['score']:
+                best_match['entry'] = entry
+                best_match['score'] = score
+
+        logger.debug("Selected \"{0}\"".format(best_match['entry']['title']))
+        return best_match['entry']['id']
+
+    if callback is None:
+        callback = custom_sort
 
     identificator = {'type': guess['type']}
     for idtype in guess['type'].value.idTypes.value:
