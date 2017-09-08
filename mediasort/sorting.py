@@ -153,7 +153,7 @@ def get_images(identificator, languages, providers):
 
 # sorting helpers
 def meta_sort(guess, identificator, metadata, plugins, paths, languages,
-              overwrite):
+              settings):
     """ writes nfo and downloads images"""
     images = get_images(
         identificator,
@@ -163,25 +163,26 @@ def meta_sort(guess, identificator, metadata, plugins, paths, languages,
 
     # write the nfo
     if ('nfo' in paths and
-        (overwrite['nfo'] or not os.path.isfile(paths['nfo']))):
+       (settings['overwrite']['nfo'] or not os.path.isfile(paths['nfo']))):
         logger.debug("Writing " + paths['nfo'])
-        write_nfo(paths['template'],
-                  {'metadata': metadata,
-                   'identificator': identificator,
-                   'guess': guess},
-                  paths['nfo'])
+        if not settings['simulate']:
+            write_nfo(paths['template'],
+                      {'metadata': metadata,
+                       'identificator': identificator,
+                       'guess': guess},
+                      paths['nfo'])
 
     # download the images
     for image in images:
         if images[image] and \
-           (overwrite['images'] or not os.path.isfile(paths[image])):
+           (settings['overwrite']['images'] or not os.path.isfile(paths[image])):
             logger.debug("Downloading " + paths[image])
-            download(images[image], paths[image])
+            if not settings['simulate']:
+                download(images[image], paths[image])
 
 
 # sorting
-def sort(videofile, plugins, ids, paths, languages, overwrite=False,
-         callbacks=None):
+def sort(videofile, plugins, ids, paths, languages, settings, callbacks=None):
     """ sorts a videofile """
     videofile = {
         'basename': os.path.basename(videofile),
@@ -209,38 +210,39 @@ def sort(videofile, plugins, ids, paths, languages, overwrite=False,
             plugins[PluginType.metadata.name][identificator['type'].name]
         )
 
-
         # get paths
         try:
             rendered_paths = get_paths(
                 paths[identificator['type'].name],
                 {'metadata': metadata,
-                'identificator': identificator,
-                'guess': guess})
+                 'identificator': identificator,
+                 'guess': guess})
         except PermissionError as e:
             logger.error("You don't have needed permissions: {0}".format(e))
             logger.debug("---- Cut here ----\n")
             return None
 
         # create base path
-        os.makedirs(rendered_paths['base'], exist_ok=True)
+        if not settings['simulate']:
+            os.makedirs(rendered_paths['base'], exist_ok=True)
 
         # write nfo and download images
         try:
             meta_sort(guess, identificator, metadata, plugins, rendered_paths,
-                    languages, overwrite)
+                      languages, settings)
         except FileNotFoundError as e:
             logger.error("A needed file wasn't found: {0}".format(e))
             logger.debug("---- Cut here ----\n")
             return None
 
         # move the media
-        if overwrite['media'] or not os.path.isfile(rendered_paths['media']):
+        if settings['overwrite']['media'] or not \
+           os.path.isfile(rendered_paths['media']):
             logger.debug("Moving media to " + rendered_paths['media'])
-            move(
-                videofile['abspath'],
-                "{0}.{1}".format(rendered_paths['media'], videofile['extension'])
-            )
+            if not settings['simulate']:
+                move(videofile['abspath'],
+                     "{0}.{1}".format(rendered_paths['media'],
+                                      videofile['extension']))
 
         # sort successors
         if getattr(identificator['type'].value, 'get_successors', None) is not None:
@@ -259,16 +261,16 @@ def sort(videofile, plugins, ids, paths, languages, overwrite=False,
                 newPaths = get_paths(
                     paths[newIdentificator['type'].name],
                     {'metadata': metadata,
-                    'identificator': newIdentificator}
+                     'identificator': newIdentificator}
                 )
 
                 meta_sort(guess,
-                        newIdentificator,
-                        newMetadata,
-                        plugins,
-                        newPaths,
-                        languages,
-                        overwrite)
+                          newIdentificator,
+                          newMetadata,
+                          plugins,
+                          newPaths,
+                          languages,
+                          settings)
 
     except (error.NotEnoughData, error.CallbackBreak) as e:
         logger.error(str(e))
